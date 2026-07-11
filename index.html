@@ -163,6 +163,16 @@
             <div class="ai-grid">
               <!-- Left: Inputs -->
               <div class="ai-inputs-panel">
+                <!-- Target Selection for AI Analysis -->
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label for="ai-target-who">👥 此食材/照片分配給：</label>
+                  <select id="ai-target-who" style="background: rgba(15, 23, 42, 0.8); border-color: var(--border-color);">
+                    <option value="both">👫 雙人共餐 (熱量/蛋白質均分)</option>
+                    <option value="male">🙋‍♂️ 男生專屬</option>
+                    <option value="female">🙋‍♀️ 女生專屬</option>
+                  </select>
+                </div>
+
                 <!-- Tabs for Photo vs Text -->
                 <div class="ai-tabs">
                   <button class="ai-tab-btn active" id="tab-btn-photo">📷 照片/發票辨識</button>

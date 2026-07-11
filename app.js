@@ -154,6 +154,7 @@ const totalAnalP = document.getElementById('total-anal-p');
 const totalAnalC = document.getElementById('total-anal-c');
 const totalAnalF = document.getElementById('total-anal-f');
 const importIngredientsBtn = document.getElementById('import-ingredients-btn');
+const aiTargetWho = document.getElementById('ai-target-who');
 
 // Navigation Tabs
 const navTabKitchen = document.getElementById('tab-nav-kitchen');
@@ -895,23 +896,12 @@ function displayAnalysisResults() {
   resultsContainer.style.display = 'block';
 }
 
-// Import parsed items as a shared food log entry
+// Import parsed items as a shared food log entry (1-click import using form selections)
 function importIngredientsToLogs() {
   if (parsedIngredientsList.length === 0) return;
 
-  const targetWho = prompt("請輸入匯入對象：\n輸入 'both' 代表雙人共餐\n輸入 'male' 代表給男生\n輸入 'female' 代表給女生", "both");
-  if (targetWho !== 'both' && targetWho !== 'male' && targetWho !== 'female') {
-    alert('輸入無效，未匯入。');
-    return;
-  }
-
-  const targetMeal = prompt("請選擇匯入餐別：\n輸入 '早餐'、'午餐'、'晚餐' 或 '點心'", "晚餐");
-  if (!['早餐', '午餐', '晚餐', '點心'].includes(targetMeal)) {
-    alert('輸入無效，未匯入。');
-    return;
-  }
-
-  // Import into the date currently selected in the food log form
+  const targetWho = aiTargetWho.value;
+  const targetMeal = foodLogMeal.value;
   const dateStr = foodLogDate.value || new Date().toISOString().split('T')[0];
 
   // Combine items to import as a single aggregate entry
@@ -941,7 +931,9 @@ function importIngredientsToLogs() {
   renderHistoryTable();
   
   navTabLog.click();
-  alert(`成功！已將 AI 解析的總計 ${Math.round(totalCal)} kcal / ${Math.round(totalP)}g 蛋白質 匯入 ${dateStr} ${targetMeal} 飲食日誌。`);
+  
+  const whoLabel = targetWho === 'both' ? '👫 雙人共餐' : (targetWho === 'male' ? '🙋‍♂️ 男生' : '🙋‍♀️ 女生');
+  alert(`成功！已將 AI 解析的總計 ${Math.round(totalCal)} kcal / ${Math.round(totalP)}g 蛋白質 匯入至 ${dateStr} ${whoLabel} 的 ${targetMeal} 飲食日誌。`);
 }
 
 // Render dynamic charts using Chart.js
