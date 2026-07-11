@@ -450,27 +450,64 @@
             <section class="log-section" style="width: 100%; max-width: 600px;">
               <h2>💪 新增運動日誌</h2>
               <form id="workout-log-form" class="log-form-stacked">
-                <div class="form-group">
-                  <label for="workout-log-date">選擇日期</label>
-                  <input type="date" id="workout-log-date" required>
+                <div class="form-group-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                  <div class="form-group">
+                    <label for="workout-log-date">選擇日期</label>
+                    <input type="date" id="workout-log-date" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="workout-log-who">運動成員</label>
+                    <select id="workout-log-who" required style="background: rgba(15, 23, 42, 0.8); border-color: var(--border-color); width: 100%;">
+                      <option value="male">🙋‍♂️ 男生</option>
+                      <option value="female">🙋‍♀️ 女生</option>
+                      <option value="both">👫 雙人</option>
+                    </select>
+                  </div>
                 </div>
-                <div class="form-group">
-                  <label for="workout-log-who">運動成員</label>
-                  <select id="workout-log-who" required>
-                    <option value="male">🙋‍♂️ 男生</option>
-                    <option value="female">🙋‍♀️ 女生</option>
-                    <option value="both">👫 雙人</option>
-                  </select>
+
+                <div class="form-group-row" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1rem; margin-top: 0.75rem;">
+                  <div class="form-group">
+                    <label for="workout-log-type">🏋️ 運動類別</label>
+                    <select id="workout-log-type" required style="background: rgba(15, 23, 42, 0.8); border-color: var(--border-color); width: 100%;">
+                      <option value="重量訓練" data-met="5.0">🏋️‍♂️ 重量訓練 (中等強度)</option>
+                      <option value="有氧跑步" data-met="8.0">🏃‍♂️ 有氧跑步 (慢跑/配速)</option>
+                      <option value="單車飛輪" data-met="6.0">🚴‍♂️ 單車/飛輪健身</option>
+                      <option value="游泳" data-met="7.0">🏊‍♂️ 游泳訓練</option>
+                      <option value="瑜珈伸展" data-met="2.5">🧘‍♂️ 瑜珈/放鬆伸展</option>
+                      <option value="其他運動" data-met="4.0">✨ 其他運動項目</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="workout-log-duration">⏱️ 運動時間 (分鐘)</label>
+                    <input type="number" id="workout-log-duration" value="30" min="1" max="300" required>
+                  </div>
                 </div>
-                <div class="form-group">
-                  <label for="workout-log-name">運動項目</label>
-                  <input type="text" id="workout-log-name" placeholder="例如：壺鈴搖擺 300 下" required>
+
+                <div class="form-group-row" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1rem; margin-top: 0.75rem;">
+                  <div class="form-group">
+                    <label for="workout-log-name">運動項目名稱</label>
+                    <input type="text" id="workout-log-name" placeholder="例如：啞鈴胸推、壺鈴搖擺" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="workout-log-desc">重量/強度備註</label>
+                    <input type="text" id="workout-log-desc" placeholder="例如：16公斤、中高強度">
+                  </div>
                 </div>
-                <div class="form-group">
-                  <label for="workout-log-desc">運動備註 (時間/重量)</label>
-                  <input type="text" id="workout-log-desc" placeholder="例如：16公斤 / 20分鐘">
+
+                <!-- Auto-calculated Burned Calories -->
+                <div class="form-group" style="margin-top: 1rem; margin-bottom: 0.75rem; background: rgba(14, 165, 233, 0.1); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(14, 165, 233, 0.2);">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.85rem; color: var(--text-main); font-weight: 600;">🔥 預估消耗熱量：</span>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                      <input type="number" id="workout-log-burned" style="width: 80px; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.2rem 0.4rem; text-align: center; color: var(--text-main); font-weight: bold;" value="0">
+                      <span style="font-size: 0.85rem; color: var(--text-muted);">kcal</span>
+                    </div>
+                  </div>
+                  <p id="workout-info-tip" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; line-height: 1.4; margin-bottom: 0.25rem;"></p>
+                  <a href="https://www.google.com/search?q=運動熱量消耗計算" target="_blank" style="font-size: 0.75rem; color: #38bdf8; text-decoration: underline; margin-top: 0.25rem; display: inline-block;">🌐 線上搜尋運動熱量消耗估算資訊</a>
                 </div>
-                <button type="submit" class="ai-action-btn primary">➕ 新增運動紀錄</button>
+
+                <button type="submit" class="ai-action-btn primary" style="margin-top: 0.5rem;">➕ 新增運動紀錄</button>
               </form>
             </section>
           </div>

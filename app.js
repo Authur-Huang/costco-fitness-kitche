@@ -205,8 +205,12 @@ const logFemaleW = document.getElementById('log-female-w');
 const logFemaleF = document.getElementById('log-female-f');
 
 const workoutLogWho = document.getElementById('workout-log-who');
+const workoutLogType = document.getElementById('workout-log-type');
+const workoutLogDuration = document.getElementById('workout-log-duration');
 const workoutLogName = document.getElementById('workout-log-name');
 const workoutLogDesc = document.getElementById('workout-log-desc');
+const workoutLogBurned = document.getElementById('workout-log-burned');
+const workoutInfoTip = document.getElementById('workout-info-tip');
 
 // History logs tab buttons
 const histTabFood = document.getElementById('hist-tab-food');
@@ -224,6 +228,7 @@ function init() {
   setupAIEventListeners();
   setupNavigation();
   setupLogFormListeners();
+  setupWorkoutListeners();
   
   // Load cloud data from Vercel KV
   loadSharedData();
@@ -423,16 +428,22 @@ function setupLogFormListeners() {
     e.preventDefault();
     const date = workoutLogDate.value;
     const who = workoutLogWho.value;
+    const type = workoutLogType.value;
     const name = workoutLogName.value.trim();
+    const duration = parseFloat(workoutLogDuration.value) || 0;
     const desc = workoutLogDesc.value.trim();
+    const burnedCal = parseFloat(workoutLogBurned.value) || 0;
 
-    fitnessDB.workoutLogs.push({ date, who, name, desc });
+    fitnessDB.workoutLogs.push({ date, who, type, name, duration, desc, burnedCal });
     fitnessDB.workoutLogs.sort((a,b) => b.date.localeCompare(a.date));
 
     // Reset
     workoutLogName.value = '';
     workoutLogDesc.value = '';
+    workoutLogDuration.value = '30';
 
+    calculateBurnedCalories();
+    calculateTargets();
     saveSharedData();
     renderHistoryTable();
     alert('運動紀錄成功儲存！');
@@ -442,6 +453,69 @@ function setupLogFormListeners() {
   histTabFood.addEventListener('click', () => setHistoryTabActive('food'));
   histTabWorkout.addEventListener('click', () => setHistoryTabActive('workout'));
   histTabWeight.addEventListener('click', () => setHistoryTabActive('weight'));
+}
+
+// Workout Calorie Auto-Estimation Setup
+function setupWorkoutListeners() {
+  if (workoutLogWho && workoutLogType && workoutLogDuration) {
+    [workoutLogWho, workoutLogType].forEach(el => {
+      el.addEventListener('change', calculateBurnedCalories);
+    });
+    workoutLogDuration.addEventListener('input', calculateBurnedCalories);
+    
+    // Listen to weight changes to update MET calculation
+    if (logMaleW) logMaleW.addEventListener('input', calculateBurnedCalories);
+    if (logFemaleW) logFemaleW.addEventListener('input', calculateBurnedCalories);
+
+    // Initial calculation
+    calculateBurnedCalories();
+  }
+}
+
+function calculateBurnedCalories() {
+  if (!workoutLogWho || !workoutLogType || !workoutLogDuration || !workoutLogBurned) return;
+  
+  const who = workoutLogWho.value;
+  const type = workoutLogType.value;
+  const duration = parseFloat(workoutLogDuration.value) || 0;
+  
+  // Default weights from inputs or fallbacks
+  let weight = 70;
+  if (who === 'male') {
+    weight = parseFloat(logMaleW.value) || 85;
+  } else if (who === 'female') {
+    weight = parseFloat(logFemaleW.value) || 67;
+  } else if (who === 'both') {
+    const mw = parseFloat(logMaleW.value) || 85;
+    const fw = parseFloat(logFemaleW.value) || 67;
+    weight = (mw + fw) / 2;
+  }
+  
+  // MET values
+  const selectedOpt = workoutLogType.options[workoutLogType.selectedIndex];
+  if (!selectedOpt) return;
+  const met = parseFloat(selectedOpt.getAttribute('data-met')) || 4.0;
+  
+  // Calories = MET * Weight (kg) * (Duration / 60)
+  const calories = Math.round(met * weight * (duration / 60));
+  workoutLogBurned.value = calories;
+  
+  // Dynamic Tip text
+  let tip = "";
+  if (type === '重量訓練') {
+    tip = "💡 重訓的『後燃效應』能持續消耗脂肪，也有助於維持瘦體重與提高代謝率！";
+  } else if (type === '有氧跑步') {
+    tip = "💡 跑步是極佳的心肺訓練。建議控制強度在慢跑配速，以最大心率 60-70% 達到最高燃脂效率。";
+  } else if (type === '單車飛輪') {
+    tip = "💡 飛輪主要鍛鍊大腿與臀部肌群，是爆發力與耐力雙修的高燃脂運動項目！";
+  } else if (type === '游泳') {
+    tip = "💡 游泳提供全身浮力支撐，低衝擊力，對膝關節與腰部負擔極小，特別適合減脂。";
+  } else if (type === '瑜珈伸展') {
+    tip = "💡 瑜珈主要用於拉伸、修復以及放鬆肌肉，並能降低壓力荷爾蒙，避免多餘脂肪囤積。";
+  } else {
+    tip = "💡 養成規律的運動習慣是健身的關鍵！運動後請記得補充適量水份與優質蛋白質。";
+  }
+  if (workoutInfoTip) workoutInfoTip.textContent = tip;
 }
 
 function setHistoryTabActive(tabName) {
@@ -504,24 +578,28 @@ function renderHistoryTable() {
         <th>日期</th>
         <th>成員</th>
         <th>運動項目</th>
-        <th>備註 (強度/時間)</th>
+        <th>時間/強度</th>
+        <th>消耗熱量</th>
         <th>操作</th>
       </tr>
     `;
     
     if (fitnessDB.workoutLogs.length === 0) {
-      body.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">尚無運動記錄。</td></tr>';
+      body.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">尚無運動記錄。</td></tr>';
       return;
     }
 
     fitnessDB.workoutLogs.forEach((item, index) => {
       const tr = document.createElement('tr');
       const whoLabel = item.who === 'both' ? '👫 雙人' : (item.who === 'male' ? '🙋‍♂️ 男生' : '🙋‍♀️ 女生');
+      const timeDesc = `${item.duration || 30} 分鐘${item.desc ? ` / ${item.desc}` : ''}`;
+      const calDesc = `${item.burnedCal || 0} kcal`;
       tr.innerHTML = `
         <td>${item.date}</td>
         <td>${whoLabel}</td>
-        <td><strong>${item.name}</strong></td>
-        <td>${item.desc || '-'}</td>
+        <td><strong>[${item.type || '運動'}] ${item.name}</strong></td>
+        <td>${timeDesc}</td>
+        <td>${calDesc}</td>
         <td><button class="remove-btn" style="position:static; padding:0.2rem 0.5rem;" onclick="deleteLogItem('workout', ${index})">🗑️ 刪除</button></td>
       `;
       body.appendChild(tr);
@@ -670,19 +748,36 @@ function updateTodayProgress(mCalGoal, mPGoal, fCalGoal, fPGoal) {
     }
   });
 
+  // Sum today's exercise calories burned
+  let mCalBurned = 0;
+  let fCalBurned = 0;
+  fitnessDB.workoutLogs.forEach(log => {
+    if (log.date === todayStr) {
+      const cal = log.burnedCal || 0;
+      if (log.who === 'male') {
+        mCalBurned += cal;
+      } else if (log.who === 'female') {
+        fCalBurned += cal;
+      } else if (log.who === 'both') {
+        mCalBurned += Math.round(cal / 2);
+        fCalBurned += Math.round(cal / 2);
+      }
+    }
+  });
+
   const mCAct = Math.round((mCalAct * 0.4) / 4);
   const fCAct = Math.round((fCalAct * 0.4) / 4);
   const mCGoal = 150;
   const fCGoal = 130;
 
-  maleCalRatio.textContent = `${mCalAct} / ${mCalGoal} kcal`;
+  maleCalRatio.innerHTML = `已攝取 ${mCalAct} / 目標 ${mCalGoal} kcal <span style="color: #38bdf8; font-size: 0.8rem; margin-left: 0.5rem; font-weight: normal;">🔥 已燃燒 ${mCalBurned} kcal</span>`;
   maleCalFill.style.width = `${Math.min((mCalAct / mCalGoal) * 100, 100)}%`;
   malePRatio.textContent = `${mPAct} / ${mPGoal}g`;
   malePFill.style.width = `${Math.min((mPAct / mPGoal) * 100, 100)}%`;
   maleCRatio.textContent = `${mCAct} / ${mCGoal}g`;
   maleCFill.style.width = `${Math.min((mCAct / mCGoal) * 100, 100)}%`;
 
-  femaleCalRatio.textContent = `${fCalAct} / ${fCalGoal} kcal`;
+  femaleCalRatio.innerHTML = `已攝取 ${fCalAct} / 目標 ${fCalGoal} kcal <span style="color: #10b981; font-size: 0.8rem; margin-left: 0.5rem; font-weight: normal;">🔥 已燃燒 ${fCalBurned} kcal</span>`;
   femaleCalFill.style.width = `${Math.min((fCalAct / fCalGoal) * 100, 100)}%`;
   femalePRatio.textContent = `${fPAct} / ${fPGoal}g`;
   femalePFill.style.width = `${Math.min((fPAct / fPGoal) * 100, 100)}%`;
