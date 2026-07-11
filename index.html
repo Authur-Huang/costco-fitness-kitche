@@ -94,25 +94,6 @@
             目標熱量: <span id="female-target-calories">1,465</span> kcal / 蛋白質: <span id="female-target-protein">116</span>g
           </div>
         </div>
-
-        <!-- Costco Purchase Planner -->
-        <div class="costco-box">
-          <h3>📦 Costco 大包裝配給計算</h3>
-          <div class="input-group">
-            <label for="raw-meat-weight">採買肉品總重 (g)</label>
-            <input type="number" id="raw-meat-weight" value="3000" step="500">
-            <small>例如：去骨雞腿肉 3000g</small>
-          </div>
-          <div class="prep-result">
-            <p><strong>建議分裝方案：</strong></p>
-            <ul>
-              <li>🙋‍♂️ 男生份量：每袋 <span id="prep-male-g">250</span>g (可分裝 <span id="prep-male-bags">6</span> 袋)</li>
-              <li>🙋‍♀️ 女生份量：每袋 <span id="prep-female-g">150</span>g (可分裝 <span id="prep-female-bags">10</span> 袋)</li>
-            </ul>
-            <p class="prep-duration">此包裝可供雙人吃 <span id="prep-days">6</span> 天份的晚餐！</p>
-          </div>
-        </div>
-
         <!-- Shared Sync Settings Card -->
         <div class="costco-box sync-settings-box">
           <h3>🔗 雙人同步設定</h3>
@@ -379,33 +360,52 @@
 
         <!-- Tab 2: Shared Daily Log -->
         <div class="tab-pane" id="pane-log">
-          <!-- Update Weight / Body Fat Card -->
-          <section class="log-section">
-            <h2>📝 記錄今日體重與體脂</h2>
-            <form id="weight-log-form" class="log-form-grid">
-              <div class="form-group">
-                <label for="log-date">選擇日期</label>
-                <input type="date" id="log-date" required>
-              </div>
-              <div class="form-group">
-                <label for="log-male-w">🙋‍♂️ 男生體重 (kg)</label>
-                <input type="number" id="log-male-w" step="0.1" placeholder="例如：85.0">
-              </div>
-              <div class="form-group">
-                <label for="log-male-f">🙋‍♂️ 男生體脂 (%)</label>
-                <input type="number" id="log-male-f" step="0.1" placeholder="例如：25.0">
-              </div>
-              <div class="form-group">
-                <label for="log-female-w">🙋‍♀️ 女生體重 (kg)</label>
-                <input type="number" id="log-female-w" step="0.1" placeholder="例如：67.0">
-              </div>
-              <div class="form-group">
-                <label for="log-female-f">🙋‍♀️ 女生體脂 (%)</label>
-                <input type="number" id="log-female-f" step="0.1" placeholder="例如：31.7">
-              </div>
-              <button type="submit" class="ai-action-btn primary inline-btn">💾 儲存身體指標</button>
-            </form>
-          </section>
+          <!-- Update Weight / Body Fat Card (Split Grid) -->
+          <div class="log-split-grid" style="margin-bottom: 2rem;">
+            <!-- Male Weight Form -->
+            <section class="log-section">
+              <h2>🙋‍♂️ 記錄男生今日體重與體脂</h2>
+              <form id="male-weight-log-form" class="log-form-stacked">
+                <div class="form-group">
+                  <label for="log-male-date">選擇日期</label>
+                  <input type="date" id="log-male-date" required>
+                </div>
+                <div class="form-group-row">
+                  <div class="form-group">
+                    <label for="log-male-w">體重 (kg)</label>
+                    <input type="number" id="log-male-w" step="0.1" placeholder="例如：85.0" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="log-male-f">體脂 (%)</label>
+                    <input type="number" id="log-male-f" step="0.1" placeholder="例如：25.0">
+                  </div>
+                </div>
+                <button type="submit" class="ai-action-btn primary">💾 儲存男生指標</button>
+              </form>
+            </section>
+
+            <!-- Female Weight Form -->
+            <section class="log-section">
+              <h2>🙋‍♀️ 記錄女生今日體重與體脂</h2>
+              <form id="female-weight-log-form" class="log-form-stacked">
+                <div class="form-group">
+                  <label for="log-female-date">選擇日期</label>
+                  <input type="date" id="log-female-date" required>
+                </div>
+                <div class="form-group-row">
+                  <div class="form-group">
+                    <label for="log-female-w">體重 (kg)</label>
+                    <input type="number" id="log-female-w" step="0.1" placeholder="例如：67.0" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="log-female-f">體脂 (%)</label>
+                    <input type="number" id="log-female-f" step="0.1" placeholder="例如：31.7">
+                  </div>
+                </div>
+                <button type="submit" class="ai-action-btn primary">💾 儲存女生指標</button>
+              </form>
+            </section>
+          </div>
 
           <!-- Add Food / Workout Card -->
           <div class="log-split-grid">
@@ -413,6 +413,10 @@
             <section class="log-section">
               <h2>🥗 新增飲食日誌</h2>
               <form id="food-log-form" class="log-form-stacked">
+                <div class="form-group">
+                  <label for="food-log-date">選擇日期</label>
+                  <input type="date" id="food-log-date" required>
+                </div>
                 <div class="form-group">
                   <label for="food-log-who">對象</label>
                   <select id="food-log-who" required>
@@ -452,6 +456,10 @@
             <section class="log-section">
               <h2>💪 新增運動日誌</h2>
               <form id="workout-log-form" class="log-form-stacked">
+                <div class="form-group">
+                  <label for="workout-log-date">選擇日期</label>
+                  <input type="date" id="workout-log-date" required>
+                </div>
                 <div class="form-group">
                   <label for="workout-log-who">運動成員</label>
                   <select id="workout-log-who" required>

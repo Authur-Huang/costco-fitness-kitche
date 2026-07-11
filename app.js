@@ -112,13 +112,6 @@ const femaleTargetWeightInput = document.getElementById('female-target-weight');
 const femaleTargetCalEl = document.getElementById('female-target-calories');
 const femaleTargetProtEl = document.getElementById('female-target-protein');
 
-const rawMeatWeightInput = document.getElementById('raw-meat-weight');
-const prepMaleGEl = document.getElementById('prep-male-g');
-const prepMaleBagsEl = document.getElementById('prep-male-bags');
-const prepFemaleGEl = document.getElementById('prep-female-g');
-const prepFemaleBagsEl = document.getElementById('prep-female-bags');
-const prepDaysEl = document.getElementById('prep-days');
-
 const portionBtns = document.querySelectorAll('.portion-btn');
 const syncStatusEl = document.getElementById('sync-status');
 const copyShareLinkBtn = document.getElementById('copy-share-link-btn');
@@ -171,8 +164,13 @@ const paneLog = document.getElementById('pane-log');
 const paneCharts = document.getElementById('pane-charts');
 
 // Log Form elements
-const logDateInput = document.getElementById('log-date');
-const weightLogForm = document.getElementById('weight-log-form');
+const logMaleDate = document.getElementById('log-male-date');
+const logFemaleDate = document.getElementById('log-female-date');
+const foodLogDate = document.getElementById('food-log-date');
+const workoutLogDate = document.getElementById('workout-log-date');
+
+const maleWeightLogForm = document.getElementById('male-weight-log-form');
+const femaleWeightLogForm = document.getElementById('female-weight-log-form');
 const foodLogForm = document.getElementById('food-log-form');
 const workoutLogForm = document.getElementById('workout-log-form');
 
@@ -199,7 +197,7 @@ let activeHistTab = 'food';
 
 // Initialization
 function init() {
-  setDefaultDate();
+  setDefaultDates();
   loadFromLocalStorage();
   calculateTargets();
   updateRecipes();
@@ -212,18 +210,20 @@ function init() {
   loadSharedData();
 }
 
-// Set default date input to today
-function setDefaultDate() {
+// Set default dates to today
+function setDefaultDates() {
   const today = new Date().toISOString().split('T')[0];
-  logDateInput.value = today;
+  logMaleDate.value = today;
+  logFemaleDate.value = today;
+  foodLogDate.value = today;
+  workoutLogDate.value = today;
 }
 
 // Setup Event Listeners
 function setupEventListeners() {
   const inputs = [
     maleWeightInput, maleHeightInput, maleAgeInput, maleTargetFatInput,
-    femaleWeightInput, femaleHeightInput, femaleAgeInput, femaleTargetWeightInput,
-    rawMeatWeightInput
+    femaleWeightInput, femaleHeightInput, femaleAgeInput, femaleTargetWeightInput
   ];
 
   inputs.forEach(input => {
@@ -324,7 +324,6 @@ function setupNavigation() {
       tab.nav.classList.add('active');
       tab.pane.classList.add('active');
       
-      // If charts tab is clicked, redraw the Chart.js canvas
       if (tab.nav === navTabCharts) {
         drawCharts();
       }
@@ -332,18 +331,16 @@ function setupNavigation() {
   });
 }
 
-// Setup Log Form Submissions & Tab list
+// Setup Log Form Submissions
 function setupLogFormListeners() {
-  weightLogForm.addEventListener('submit', (e) => {
+  // Male Weight submission
+  maleWeightLogForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const date = logDateInput.value;
+    const date = logMaleDate.value;
     const maleW = parseFloat(logMaleW.value);
     const maleF = parseFloat(logMaleF.value);
-    const femaleW = parseFloat(logFemaleW.value);
-    const femaleF = parseFloat(logFemaleF.value);
 
     if (maleW) {
-      // Find and update or push
       const existing = fitnessDB.maleWeightHistory.find(h => h.date === date);
       if (existing) {
         existing.weight = maleW;
@@ -351,9 +348,30 @@ function setupLogFormListeners() {
       } else {
         fitnessDB.maleWeightHistory.push({ date, weight: maleW, fat: maleF || null });
       }
-      maleWeightInput.value = maleW; // Update sidebar input
+      maleWeightInput.value = maleW; // Update sidebar
       if (maleF) maleTargetFatInput.value = maleF;
     }
+
+    fitnessDB.maleWeightHistory.sort((a,b) => a.date.localeCompare(b.date));
+
+    // Reset inputs
+    logMaleW.value = '';
+    logMaleF.value = '';
+
+    calculateTargets();
+    updateRecipes();
+    saveToLocalStorage();
+    saveSharedData();
+    renderHistoryTable();
+    alert('已成功儲存男生體重體脂資料！');
+  });
+
+  // Female Weight submission
+  femaleWeightLogForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const date = logFemaleDate.value;
+    const femaleW = parseFloat(logFemaleW.value);
+    const femaleF = parseFloat(logFemaleF.value);
 
     if (femaleW) {
       const existing = fitnessDB.femaleWeightHistory.find(h => h.date === date);
@@ -364,16 +382,12 @@ function setupLogFormListeners() {
         fitnessDB.femaleWeightHistory.push({ date, weight: femaleW, fat: femaleF || null });
       }
       femaleWeightInput.value = femaleW; // Update sidebar
-      if (femaleF) femaleTargetWeightInput.value = femaleW; // target remains or updates
+      if (femaleF) femaleTargetWeightInput.value = femaleW;
     }
 
-    // Sort histories chronologically
-    fitnessDB.maleWeightHistory.sort((a,b) => a.date.localeCompare(b.date));
     fitnessDB.femaleWeightHistory.sort((a,b) => a.date.localeCompare(b.date));
 
     // Reset inputs
-    logMaleW.value = '';
-    logMaleF.value = '';
     logFemaleW.value = '';
     logFemaleF.value = '';
 
@@ -382,12 +396,13 @@ function setupLogFormListeners() {
     saveToLocalStorage();
     saveSharedData();
     renderHistoryTable();
-    alert('成功記錄體重與體脂指標！');
+    alert('已成功儲存女生體重體脂資料！');
   });
 
+  // Food log submission
   foodLogForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const date = logDateInput.value;
+    const date = foodLogDate.value;
     const who = foodLogWho.value;
     const meal = foodLogMeal.value;
     const name = foodLogName.value.trim();
@@ -395,8 +410,6 @@ function setupLogFormListeners() {
     const p = Math.round(parseFloat(foodLogP.value) * 10) / 10;
 
     fitnessDB.foodLogs.push({ date, who, meal, name, cal, p });
-    
-    // Sort
     fitnessDB.foodLogs.sort((a,b) => b.date.localeCompare(a.date));
 
     // Reset
@@ -410,16 +423,15 @@ function setupLogFormListeners() {
     alert('飲食紀錄成功儲存！');
   });
 
+  // Workout log submission
   workoutLogForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const date = logDateInput.value;
+    const date = workoutLogDate.value;
     const who = workoutLogWho.value;
     const name = workoutLogName.value.trim();
     const desc = workoutLogDesc.value.trim();
 
     fitnessDB.workoutLogs.push({ date, who, name, desc });
-    
-    // Sort
     fitnessDB.workoutLogs.sort((a,b) => b.date.localeCompare(a.date));
 
     // Reset
@@ -432,15 +444,9 @@ function setupLogFormListeners() {
   });
 
   // History logs navigation
-  histTabFood.addEventListener('click', () => {
-    setHistoryTabActive('food');
-  });
-  histTabWorkout.addEventListener('click', () => {
-    setHistoryTabActive('workout');
-  });
-  histTabWeight.addEventListener('click', () => {
-    setHistoryTabActive('weight');
-  });
+  histTabFood.addEventListener('click', () => setHistoryTabActive('food'));
+  histTabWorkout.addEventListener('click', () => setHistoryTabActive('workout'));
+  histTabWeight.addEventListener('click', () => setHistoryTabActive('weight'));
 }
 
 function setHistoryTabActive(tabName) {
@@ -642,27 +648,6 @@ function calculateTargets() {
   femaleTargetCalEl.textContent = fTargetCal.toLocaleString();
   femaleTargetProtEl.textContent = fTargetProt;
 
-  // Costco package calculation
-  const rawWeight = parseFloat(rawMeatWeightInput.value) || 3000;
-  const malePortion = 250; 
-  const femalePortion = 150; 
-  const combinedPortion = malePortion + femalePortion;
-  
-  const days = Math.floor(rawWeight / combinedPortion);
-  const leftover = rawWeight % combinedPortion;
-
-  prepMaleGEl.textContent = malePortion;
-  prepMaleBagsEl.textContent = days;
-  prepFemaleGEl.textContent = femalePortion;
-  prepFemaleBagsEl.textContent = days;
-  
-  if (leftover > 0) {
-    prepDaysEl.innerHTML = `${days} 天的晚餐！並剩下 ${leftover}g 可做配菜。`;
-  } else {
-    prepDaysEl.textContent = `${days} 天的晚餐！`;
-  }
-
-  // Calculate actual macros from shared log for "Today"
   updateTodayProgress(mTargetCal, mTargetProt, fTargetCal, fTargetProt);
 }
 
@@ -670,7 +655,6 @@ function calculateTargets() {
 function updateTodayProgress(mCalGoal, mPGoal, fCalGoal, fPGoal) {
   const todayStr = new Date().toISOString().split('T')[0];
   
-  // Sum macros for today
   let mCalAct = 0, mPAct = 0;
   let fCalAct = 0, fPAct = 0;
 
@@ -683,7 +667,6 @@ function updateTodayProgress(mCalGoal, mPGoal, fCalGoal, fPGoal) {
         fCalAct += log.cal;
         fPAct += log.p;
       } else if (log.who === 'both') {
-        // Shared meal: each gets half of the calories and protein
         mCalAct += Math.round(log.cal / 2);
         mPAct += Math.round((log.p / 2) * 10) / 10;
         fCalAct += Math.round(log.cal / 2);
@@ -692,8 +675,6 @@ function updateTodayProgress(mCalGoal, mPGoal, fCalGoal, fPGoal) {
     }
   });
 
-  // Calculate carbs (simulated ratio based on calories from food logs)
-  // If no logs, show 0. If logs, estimate C based on 40% of calories.
   const mCAct = Math.round((mCalAct * 0.4) / 4);
   const fCAct = Math.round((fCalAct * 0.4) / 4);
   const mCGoal = 150;
@@ -930,7 +911,8 @@ function importIngredientsToLogs() {
     return;
   }
 
-  const dateStr = new Date().toISOString().split('T')[0];
+  // Import into the date currently selected in the food log form
+  const dateStr = foodLogDate.value || new Date().toISOString().split('T')[0];
 
   // Combine items to import as a single aggregate entry
   let totalP = 0, totalCal = 0;
@@ -954,26 +936,12 @@ function importIngredientsToLogs() {
 
   fitnessDB.foodLogs.sort((a,b) => b.date.localeCompare(a.date));
 
-  // Sync BMR and save
   calculateTargets();
   saveSharedData();
   renderHistoryTable();
   
-  // Redirect user to the log tab to verify
   navTabLog.click();
-  alert(`成功！已將 AI 解析的總計 ${Math.round(totalCal)} kcal / ${Math.round(totalP)}g 蛋白質 匯入今日 ${targetMeal} 飲食日誌。`);
-}
-
-// Toggle loading state
-function showLoading(show, text = "") {
-  if (show) {
-    aiStatusText.textContent = text;
-    aiLoading.style.display = 'flex';
-    resultPlaceholder.style.display = 'none';
-    resultsContainer.style.display = 'none';
-  } else {
-    aiLoading.style.display = 'none';
-  }
+  alert(`成功！已將 AI 解析的總計 ${Math.round(totalCal)} kcal / ${Math.round(totalP)}g 蛋白質 匯入 ${dateStr} ${targetMeal} 飲食日誌。`);
 }
 
 // Render dynamic charts using Chart.js
@@ -983,7 +951,6 @@ function drawCharts() {
     ...fitnessDB.femaleWeightHistory.map(h => h.date)
   ])).sort((a,b) => a.localeCompare(b)); // chronological asc
 
-  // Prepare datasets
   const maleWeights = dates.map(d => {
     const found = fitnessDB.maleWeightHistory.find(h => h.date === d);
     return found ? found.weight : null;
@@ -1004,14 +971,12 @@ function drawCharts() {
     return found ? found.fat : null;
   });
 
-  // Destroy previous charts to redraw
   if (weightChartInstance) weightChartInstance.destroy();
   if (fatChartInstance) fatChartInstance.destroy();
 
   const ctxWeight = document.getElementById('weightChart').getContext('2d');
   const ctxFat = document.getElementById('fatChart').getContext('2d');
 
-  // Chart configuration theme
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -1099,14 +1064,13 @@ async function loadSharedData() {
     
     const cloudData = await response.json();
     
-    // Merge cloud data to local state
     if (cloudData) {
       if (cloudData.maleWeightHistory) fitnessDB.maleWeightHistory = cloudData.maleWeightHistory;
       if (cloudData.femaleWeightHistory) fitnessDB.femaleWeightHistory = cloudData.femaleWeightHistory;
       if (cloudData.foodLogs) fitnessDB.foodLogs = cloudData.foodLogs;
       if (cloudData.workoutLogs) fitnessDB.workoutLogs = cloudData.workoutLogs;
       
-      // Update BMR Inputs based on latest weight record
+      // Sync sidebar inputs with the latest record
       if (fitnessDB.maleWeightHistory.length > 0) {
         const latest = fitnessDB.maleWeightHistory[fitnessDB.maleWeightHistory.length - 1];
         maleWeightInput.value = latest.weight;
@@ -1121,10 +1085,9 @@ async function loadSharedData() {
 
     setSyncStatus('synced', '☁️ 雲端已同步');
   } catch (err) {
-    console.warn("Could not load from Vercel KV database, using local storage fallback:", err);
+    console.warn("Could not load from Vercel KV, using local storage fallback:", err);
     setSyncStatus('error', '⚠️ 離線本地模式');
     
-    // Load local backup from LocalStorage
     const localBackup = localStorage.getItem('costco_fitness_db_backup');
     if (localBackup) {
       try {
@@ -1133,14 +1096,12 @@ async function loadSharedData() {
     }
   }
 
-  // Draw logs list and update calculations
   calculateTargets();
   renderHistoryTable();
 }
 
 // Call /api/save to push updates to Vercel KV
 async function saveSharedData() {
-  // Save local backup
   localStorage.setItem('costco_fitness_db_backup', JSON.stringify(fitnessDB));
   
   setSyncStatus('loading', '🔄 雲端儲存中...');
@@ -1161,12 +1122,11 @@ async function saveSharedData() {
     if (!response.ok) throw new Error('API_SAVE_ERROR');
     setSyncStatus('synced', '☁️ 雲端已同步');
   } catch (err) {
-    console.warn("Could not write to Vercel KV database:", err);
+    console.warn("Could not write to Vercel KV:", err);
     setSyncStatus('error', '⚠️ 未同步到雲端');
   }
 }
 
-// Set status indicator state
 function setSyncStatus(state, text) {
   syncStatusEl.className = 'sync-status-indicator';
   syncStatusEl.textContent = text;
@@ -1187,7 +1147,6 @@ function saveToLocalStorage() {
     femaleHeight: femaleHeightInput.value,
     femaleAge: femaleAgeInput.value,
     femaleTargetWeight: femaleTargetWeightInput.value,
-    rawMeatWeight: rawMeatWeightInput.value,
     currentMode: currentMode
   };
   localStorage.setItem('costco_fitness_settings', JSON.stringify(settings));
@@ -1206,7 +1165,6 @@ function loadFromLocalStorage() {
       if (settings.femaleHeight) femaleHeightInput.value = settings.femaleHeight;
       if (settings.femaleAge) femaleAgeInput.value = settings.femaleAge;
       if (settings.femaleTargetWeight) femaleTargetWeightInput.value = settings.femaleTargetWeight;
-      if (settings.rawMeatWeight) rawMeatWeightInput.value = settings.rawMeatWeight;
       if (settings.currentMode) {
         currentMode = settings.currentMode;
         portionBtns.forEach(btn => {
@@ -1223,5 +1181,4 @@ function loadFromLocalStorage() {
   }
 }
 
-// Run app
 window.onload = init;
