@@ -12,14 +12,14 @@
   <link rel="stylesheet" href="style.css?v=2">
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Global Error Logger for Mobile Debugging -->
+  <!-- Global Error Logger -->
   <script>
     window.onerror = function(message, source, lineno, colno, error) {
-      alert("JS 錯誤: " + message + "\n來源: " + source + "\n行: " + lineno + "\n堆疊: " + (error ? error.stack : '無'));
+      console.error("JS 錯誤:", message, source + ":" + lineno, error ? error.stack : '');
       return false;
     };
     window.onunhandledrejection = function(event) {
-      alert("Promise 錯誤: " + event.reason);
+      console.error("Promise 錯誤:", event.reason);
     };
   </script>
 </head>
@@ -676,6 +676,6 @@
   </div>
 
   <!-- JavaScript logic -->
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

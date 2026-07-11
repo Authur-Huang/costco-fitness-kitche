@@ -1,13 +1,6 @@
-module.exports = async (req, res) => {
-  // CORS Headers
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  );
+const SHARE_KEY_FORMAT = /^[A-Za-z0-9_-]{8,64}$/;
 
+module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
@@ -20,9 +13,14 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: 'Vercel KV is not connected. Please create and connect KV database in Vercel Storage settings.' });
   }
 
+  // Per-couple private record when a share key is provided;
+  // the bare "fitness_data" record is kept readable only for one-time
+  // migration of data saved before share keys existed.
+  const rawKey = (req.query && req.query.key) || '';
+  const kvKey = SHARE_KEY_FORMAT.test(rawKey) ? `fitness_data_${rawKey}` : 'fitness_data';
+
   try {
-    // Call Vercel KV REST API to GET key "fitness_data"
-    const response = await fetch(`${kvUrl}/get/fitness_data`, {
+    const response = await fetch(`${kvUrl}/get/${kvKey}`, {
       headers: {
         Authorization: `Bearer ${kvToken}`
       }
@@ -35,14 +33,15 @@ module.exports = async (req, res) => {
 
     const resJson = await response.json();
     const rawResult = resJson.result;
-    
+
     if (!rawResult) {
       // Return empty database schema if no data exists yet
       return res.status(200).json({
         maleWeightHistory: [],
         femaleWeightHistory: [],
         foodLogs: [],
-        workoutLogs: []
+        workoutLogs: [],
+        costcoInventory: []
       });
     }
 

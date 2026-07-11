@@ -103,6 +103,67 @@ let activeTab = 'photo';
 let uploadedImageBase64 = null;
 let parsedIngredientsList = [];
 
+// Escape user-provided strings before injecting into innerHTML / attributes
+function escapeHTML(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Private share key: isolates each couple's data in its own KV record
+const SHARE_KEY_STORAGE = 'costco_fitness_share_key';
+const SHARE_KEY_FORMAT = /^[A-Za-z0-9_-]{8,64}$/;
+let shareKey = null;
+let needsLegacyMigration = false;
+
+function generateShareKey() {
+  if (window.crypto && crypto.randomUUID) {
+    return crypto.randomUUID().replace(/-/g, '');
+  }
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  return Array.from({ length: 32 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+function initShareKey() {
+  let urlKey = null;
+  try {
+    urlKey = new URLSearchParams(window.location.search).get('key');
+  } catch (e) {}
+  const storedKey = localStorage.getItem(SHARE_KEY_STORAGE);
+
+  if (urlKey && SHARE_KEY_FORMAT.test(urlKey)) {
+    // Joining via a shared link: adopt the partner's key
+    shareKey = urlKey;
+    localStorage.setItem(SHARE_KEY_STORAGE, shareKey);
+  } else if (storedKey && SHARE_KEY_FORMAT.test(storedKey)) {
+    shareKey = storedKey;
+  } else {
+    shareKey = generateShareKey();
+    localStorage.setItem(SHARE_KEY_STORAGE, shareKey);
+    // First run on this device: pull data from the old shared pool once
+    needsLegacyMigration = true;
+  }
+
+  // Keep the key in the address bar so copying the browser URL also shares it
+  try {
+    if (window.location.protocol !== 'file:') {
+      history.replaceState(null, '', `${window.location.pathname}?key=${shareKey}`);
+    }
+  } catch (e) {}
+}
+
+function buildShareLink() {
+  return `${window.location.origin}${window.location.pathname}?key=${shareKey}`;
+}
+
+function hasAnyContent(db) {
+  return !!db && ['maleWeightHistory', 'femaleWeightHistory', 'foodLogs', 'workoutLogs', 'costcoInventory']
+    .some(k => Array.isArray(db[k]) && db[k].length > 0);
+}
+
 // Shared Database State
 let fitnessDB = {
   maleWeightHistory: [],   // { date, weight, fat }
@@ -238,6 +299,7 @@ let activeHistTab = 'food';
 
 // Initialization
 function init() {
+  initShareKey();
   setDefaultDates();
   loadFromLocalStorage();
   calculateTargets();
@@ -247,9 +309,24 @@ function init() {
   setupNavigation();
   setupLogFormListeners();
   setupWorkoutListeners();
-  
+  setupAutoRefresh();
+
   // Load cloud data from Vercel KV
   loadSharedData();
+}
+
+// Re-pull cloud data when returning to the page (reduces stale-overwrite risk
+// between two devices), skipping while the user is typing in a field.
+function setupAutoRefresh() {
+  const refresh = () => {
+    const ae = document.activeElement;
+    if (ae && ['INPUT', 'TEXTAREA', 'SELECT'].includes(ae.tagName)) return;
+    loadSharedData();
+  };
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refresh();
+  });
+  setInterval(refresh, 90000);
 }
 
 // Set default dates to today
@@ -286,8 +363,8 @@ function setupEventListeners() {
   });
 
   copyShareLinkBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(window.location.href);
-    alert('已複製共享網址！您可以發送給您的伴侶，開啟後即可實時同步健身日誌。');
+    navigator.clipboard.writeText(buildShareLink());
+    alert('已複製共享網址（內含你們專屬的同步金鑰）！\n請只發送給您的伴侶，開啟後即可實時同步健身日誌。');
   });
 }
 
@@ -469,9 +546,8 @@ function setupLogFormListeners() {
       }
       fitnessDB.maleWeightHistory.sort((a,b) => a.date.localeCompare(b.date));
 
-      // Sync sidebar inputs
+      // Sync sidebar current weight (target fields stay as user-set goals)
       maleWeightInput.value = maleW;
-      if (!isNaN(maleF)) maleTargetFatInput.value = maleF;
 
       calculateTargets();
       saveSharedData();
@@ -500,9 +576,8 @@ function setupLogFormListeners() {
       }
       fitnessDB.femaleWeightHistory.sort((a,b) => a.date.localeCompare(b.date));
 
-      // Sync sidebar inputs
+      // Sync sidebar current weight (target fields stay as user-set goals)
       femaleWeightInput.value = femaleW;
-      if (!isNaN(femaleF)) femaleTargetWeightInput.value = femaleW;
 
       calculateTargets();
       saveSharedData();
@@ -628,10 +703,10 @@ function renderHistoryTable() {
       const tr = document.createElement('tr');
       const whoLabel = item.who === 'both' ? '👫 雙人' : (item.who === 'male' ? '🙋‍♂️ 男生' : '🙋‍♀️ 女生');
       tr.innerHTML = `
-        <td>${item.date}</td>
+        <td>${escapeHTML(item.date)}</td>
         <td>${whoLabel}</td>
-        <td>${item.meal}</td>
-        <td><strong>${item.name}</strong></td>
+        <td>${escapeHTML(item.meal)}</td>
+        <td><strong>${escapeHTML(item.name)}</strong></td>
         <td>${item.cal} kcal</td>
         <td>${item.p}g</td>
         <td><button class="remove-btn" style="position:static; padding:0.2rem 0.5rem;" onclick="deleteLogItem('food', ${index})">🗑️ 刪除</button></td>
@@ -660,13 +735,13 @@ function renderHistoryTable() {
       const tr = document.createElement('tr');
       const whoLabel = item.who === 'both' ? '👫 雙人' : (item.who === 'male' ? '🙋‍♂️ 男生' : '🙋‍♀️ 女生');
       const loadDesc = item.load ? ` / 負重 ${item.load}kg` : '';
-      const intensityDesc = item.intensity ? ` / ${item.intensity}` : '';
-      const timeDesc = `${item.duration || 30} 分鐘${loadDesc}${intensityDesc}${item.desc ? ` / ${item.desc}` : ''}`;
+      const intensityDesc = item.intensity ? ` / ${escapeHTML(item.intensity)}` : '';
+      const timeDesc = `${item.duration || 30} 分鐘${loadDesc}${intensityDesc}${item.desc ? ` / ${escapeHTML(item.desc)}` : ''}`;
       const calDesc = `${item.burnedCal || 0} kcal`;
       tr.innerHTML = `
-        <td>${item.date}</td>
+        <td>${escapeHTML(item.date)}</td>
         <td>${whoLabel}</td>
-        <td><strong>[${item.type || '運動'}] ${item.name}</strong></td>
+        <td><strong>[${escapeHTML(item.type || '運動')}] ${escapeHTML(item.name)}</strong></td>
         <td>${timeDesc}</td>
         <td>${calDesc}</td>
         <td><button class="remove-btn" style="position:static; padding:0.2rem 0.5rem;" onclick="deleteLogItem('workout', ${index})">🗑️ 刪除</button></td>
@@ -733,16 +808,14 @@ window.deleteWeightItem = function(date) {
   fitnessDB.maleWeightHistory = fitnessDB.maleWeightHistory.filter(h => h.date !== date);
   fitnessDB.femaleWeightHistory = fitnessDB.femaleWeightHistory.filter(h => h.date !== date);
   
-  // Sync inputs back to latest weight
+  // Sync inputs back to latest weight (target fields stay as user-set goals)
   if (fitnessDB.maleWeightHistory.length > 0) {
     const latest = fitnessDB.maleWeightHistory[fitnessDB.maleWeightHistory.length - 1];
     maleWeightInput.value = latest.weight;
-    if (latest.fat) maleTargetFatInput.value = latest.fat;
   }
   if (fitnessDB.femaleWeightHistory.length > 0) {
     const latest = fitnessDB.femaleWeightHistory[fitnessDB.femaleWeightHistory.length - 1];
     femaleWeightInput.value = latest.weight;
-    if (latest.fat) femaleTargetWeightInput.value = latest.weight;
   }
 
   calculateTargets();
@@ -901,17 +974,19 @@ function updateTodayProgress(mCalGoal, mPGoal, fCalGoal, fPGoal) {
   }
 }
 
-// Unit conversion helper for Costco Inventory
+// Unit conversion helper for Costco Inventory.
+// Returns the remaining stock expressed in recipeUnit, or null when the two
+// units cannot be converted (e.g. 包 vs g) — callers must handle null.
 function getConvertedStock(invItem, recipeUnit) {
   if (!invItem) return 0;
-  
+
   const invUnit = invItem.unit;
   const rem = invItem.remaining;
-  
+
   if (invUnit === recipeUnit) {
     return rem;
   }
-  
+
   // g <-> kg
   if (invUnit === 'kg' && recipeUnit === 'g') {
     return rem * 1000;
@@ -919,45 +994,46 @@ function getConvertedStock(invItem, recipeUnit) {
   if (invUnit === 'g' && recipeUnit === 'kg') {
     return rem / 1000;
   }
-  
+
   // 顆 <-> 粒
   if ((invUnit === '顆' && recipeUnit === '粒') || (invUnit === '粒' && recipeUnit === '顆')) {
     return rem;
   }
-  
-  return rem; // Fallback
+
+  return null; // Incompatible units
 }
 
+// Returns true when stock was deducted; false when units are incompatible
+// (in that case stock is left untouched instead of guessing).
 function deductStock(invItem, recipeAmount, recipeUnit) {
-  if (!invItem) return;
-  
+  if (!invItem) return false;
+
   const invUnit = invItem.unit;
-  
+
   if (invUnit === recipeUnit) {
     invItem.remaining = Math.max(0, invItem.remaining - recipeAmount);
-    return;
+    return true;
   }
-  
+
   // g <-> kg
   if (invUnit === 'kg' && recipeUnit === 'g') {
     const neededInKg = recipeAmount / 1000;
     invItem.remaining = Math.max(0, invItem.remaining - neededInKg);
-    return;
+    return true;
   }
   if (invUnit === 'g' && recipeUnit === 'kg') {
     const neededInG = recipeAmount * 1000;
     invItem.remaining = Math.max(0, invItem.remaining - neededInG);
-    return;
+    return true;
   }
-  
+
   // 顆 <-> 粒
   if ((invUnit === '顆' && recipeUnit === '粒') || (invUnit === '粒' && recipeUnit === '顆')) {
     invItem.remaining = Math.max(0, invItem.remaining - recipeAmount);
-    return;
+    return true;
   }
-  
-  // Fallback
-  invItem.remaining = Math.max(0, invItem.remaining - recipeAmount);
+
+  return false; // Incompatible units — do not deduct blindly
 }
 
 // Update Interactive Recipes view based on portion mode
@@ -1013,7 +1089,11 @@ function updateRecipes() {
       stockBadge.style.marginLeft = '0.5rem';
       stockBadge.style.display = 'inline-block';
 
-      if (remConverted >= needed && needed > 0) {
+      if (invItem && remConverted === null && needed > 0) {
+        stockBadge.style.background = 'rgba(245, 158, 11, 0.15)';
+        stockBadge.style.color = '#fbbf24';
+        stockBadge.textContent = `⚠️ 單位不符 (庫存 ${Math.round(invItem.remaining * 10)/10}${invItem.unit}，需 ${ing.unit})`;
+      } else if (remConverted >= needed && needed > 0) {
         stockBadge.style.background = 'rgba(16, 185, 129, 0.15)';
         stockBadge.style.color = '#34d399';
         stockBadge.textContent = `✔️ 庫存足 (剩 ${Math.round(invItem.remaining * 10)/10}${invItem.unit})`;
@@ -1206,11 +1286,11 @@ function displayAnalysisResults() {
     tr.setAttribute('onmouseleave', 'clearIngredientHighlight()');
     
     tr.innerHTML = `
-      <td><input type="text" class="inline-edit-input" style="min-width: 120px; width: 100%;" value="${item.name}" onfocus="highlightIngredientBox(${index})" onblur="clearIngredientHighlight()" onchange="updateAiIngredient(${index}, 'name', this.value)"></td>
+      <td><input type="text" class="inline-edit-input" style="min-width: 120px; width: 100%;" value="${escapeHTML(item.name)}" onfocus="highlightIngredientBox(${index})" onblur="clearIngredientHighlight()" onchange="updateAiIngredient(${index}, 'name', this.value)"></td>
       <td>
         <div style="display:flex; gap:0.25rem; align-items:center;">
           <input type="number" class="inline-edit-input" style="width:60px;" value="${item.weight}" onfocus="highlightIngredientBox(${index})" onblur="clearIngredientHighlight()" onchange="updateAiIngredient(${index}, 'weight', parseFloat(this.value) || 0)">
-          <span style="font-size:0.75rem; color:var(--text-muted);">${item.unit || 'g'}</span>
+          <span style="font-size:0.75rem; color:var(--text-muted);">${escapeHTML(item.unit || 'g')}</span>
         </div>
       </td>
       <td><input type="number" class="inline-edit-input" style="width:60px;" value="${item.calories}" onfocus="highlightIngredientBox(${index})" onblur="clearIngredientHighlight()" onchange="updateAiIngredient(${index}, 'calories', parseFloat(this.value) || 0)"></td>
@@ -1363,12 +1443,26 @@ function importIngredientsToInventory() {
 
     if (qty <= 0) return;
 
-    // Fuzzy matching or exact matching
+    // Fuzzy matching or exact matching — only merge when units are convertible
     let existing = fitnessDB.costcoInventory.find(inv => inv.name.includes(name) || name.includes(inv.name));
+    let addQty = null;
     if (existing) {
-      existing.total += qty;
-      existing.remaining += qty;
+      if (existing.unit === unit) {
+        addQty = qty;
+      } else if (existing.unit === 'kg' && unit === 'g') {
+        addQty = qty / 1000;
+      } else if (existing.unit === 'g' && unit === 'kg') {
+        addQty = qty * 1000;
+      } else if ((existing.unit === '顆' && unit === '粒') || (existing.unit === '粒' && unit === '顆')) {
+        addQty = qty;
+      }
+    }
+
+    if (existing && addQty !== null) {
+      existing.total += addQty;
+      existing.remaining += addQty;
     } else {
+      // No match, or units incompatible — keep as a separate entry
       fitnessDB.costcoInventory.push({
         name: name,
         total: qty,
@@ -1406,7 +1500,7 @@ function renderInventoryList() {
     
     itemDiv.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <strong style="color:var(--text-main); font-size:0.95rem;">${item.name}</strong>
+        <strong style="color:var(--text-main); font-size:0.95rem;">${escapeHTML(item.name)}</strong>
         <div style="display:flex; align-items:center; gap:0.5rem;">
           <input type="number" class="inline-edit-input" style="width:75px; padding:0.15rem 0.3rem; text-align:center; font-weight:bold; font-size:0.85rem; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:var(--text-main); border-radius:4px;" value="${Math.round(item.remaining * 10) / 10}" onchange="updateInventoryItem(${index}, parseFloat(this.value) || 0)">
           
@@ -1475,6 +1569,7 @@ window.cookRecipe = function(recipeKey) {
   
   // Verify if we have enough stock for all ingredients
   let outOfStock = [];
+  let unitMismatch = [];
   recipe.ingredients.forEach(ing => {
     let needed = 0;
     if (mode === 'both') {
@@ -1484,17 +1579,22 @@ window.cookRecipe = function(recipeKey) {
     } else if (mode === 'female') {
       needed = ing.female;
     }
-    
+
     // Find item with unit conversion
     let invItem = fitnessDB.costcoInventory.find(inv => inv.name.includes(ing.name) || ing.name.includes(inv.name));
     const remConverted = invItem ? getConvertedStock(invItem, ing.unit) : 0;
-    if (!invItem || remConverted < needed) {
+    if (invItem && remConverted === null) {
+      unitMismatch.push(`${ing.name}（庫存單位 ${invItem.unit} 與食譜單位 ${ing.unit} 無法換算，將不扣減）`);
+    } else if (!invItem || remConverted < needed) {
       outOfStock.push(`${ing.name} (缺 ${Math.round((needed - remConverted) * 10) / 10}${ing.unit})`);
     }
   });
-  
-  if (outOfStock.length > 0) {
-    if (!confirm(`⚠️ 以下食材庫存不足：\n${outOfStock.join('\n')}\n\n是否仍然強制標記已烹飪？(庫存將扣至 0)`)) {
+
+  if (outOfStock.length > 0 || unitMismatch.length > 0) {
+    const warnings = [];
+    if (outOfStock.length > 0) warnings.push(`⚠️ 以下食材庫存不足：\n${outOfStock.join('\n')}`);
+    if (unitMismatch.length > 0) warnings.push(`⚠️ 以下食材單位不符：\n${unitMismatch.join('\n')}\n（請先到庫存清單把單位改成可換算的單位）`);
+    if (!confirm(`${warnings.join('\n\n')}\n\n是否仍然繼續標記已烹飪？`)) {
       return;
     }
   }
@@ -1667,17 +1767,34 @@ function drawCharts() {
 // Call /api/load to pull shared logs from Vercel KV
 async function loadSharedData() {
   setSyncStatus('loading', '🔄 雲端載入中...');
+  let migratedFromLegacy = false;
   try {
     const isLocalFile = window.location.protocol === 'file:';
     if (isLocalFile) {
       throw new Error('LOCAL_OFFLINE');
     }
 
-    const response = await fetch('/api/load');
+    const response = await fetch(`/api/load?key=${shareKey}`);
     if (!response.ok) throw new Error('API_LOAD_ERROR');
-    
-    const cloudData = await response.json();
-    
+
+    let cloudData = await response.json();
+
+    // One-time migration: this device has no share key yet and its private
+    // record is empty — pull the old shared-pool data so nothing is lost.
+    if (needsLegacyMigration && !hasAnyContent(cloudData)) {
+      try {
+        const legacyRes = await fetch('/api/load');
+        if (legacyRes.ok) {
+          const legacyData = await legacyRes.json();
+          if (hasAnyContent(legacyData)) {
+            cloudData = legacyData;
+            migratedFromLegacy = true;
+          }
+        }
+      } catch (e) {}
+    }
+    needsLegacyMigration = false;
+
     if (cloudData) {
       if (cloudData.maleWeightHistory) fitnessDB.maleWeightHistory = cloudData.maleWeightHistory;
       if (cloudData.femaleWeightHistory) fitnessDB.femaleWeightHistory = cloudData.femaleWeightHistory;
@@ -1685,16 +1802,15 @@ async function loadSharedData() {
       if (cloudData.workoutLogs) fitnessDB.workoutLogs = cloudData.workoutLogs;
       if (cloudData.costcoInventory) fitnessDB.costcoInventory = cloudData.costcoInventory;
       
-      // Sync sidebar inputs with the latest record
+      // Sync sidebar current weight with the latest record
+      // (target fields stay as user-set goals)
       if (fitnessDB.maleWeightHistory.length > 0) {
         const latest = fitnessDB.maleWeightHistory[fitnessDB.maleWeightHistory.length - 1];
         maleWeightInput.value = latest.weight;
-        if (latest.fat) maleTargetFatInput.value = latest.fat;
       }
       if (fitnessDB.femaleWeightHistory.length > 0) {
         const latest = fitnessDB.femaleWeightHistory[fitnessDB.femaleWeightHistory.length - 1];
         femaleWeightInput.value = latest.weight;
-        if (latest.fat) femaleTargetWeightInput.value = latest.weight;
       }
     }
 
@@ -1702,7 +1818,7 @@ async function loadSharedData() {
   } catch (err) {
     console.warn("Could not load from Vercel KV, using local storage fallback:", err);
     setSyncStatus('error', '⚠️ 離線本地模式');
-    
+
     const localBackup = localStorage.getItem('costco_fitness_db_backup');
     if (localBackup) {
       try {
@@ -1711,14 +1827,20 @@ async function loadSharedData() {
     }
   }
 
-  // Set default sample inventory if empty
-  if (!fitnessDB.costcoInventory || fitnessDB.costcoInventory.length === 0) {
+  // Seed sample inventory only on a completely fresh install,
+  // so a deliberately emptied inventory stays empty.
+  if (!hasAnyContent(fitnessDB)) {
     fitnessDB.costcoInventory = [
       { name: "去骨雞腿肉", total: 2000, remaining: 1200, unit: "g" },
       { name: "板豆腐", total: 900, remaining: 600, unit: "g" },
       { name: "新鮮雞蛋", total: 30, remaining: 18, unit: "顆" },
       { name: "冷凍毛豆仁", total: 1000, remaining: 850, unit: "g" }
     ];
+  }
+
+  // Persist migrated legacy data under the new private key right away
+  if (migratedFromLegacy) {
+    saveSharedData();
   }
 
   renderInventoryList();
@@ -1738,7 +1860,7 @@ async function saveSharedData() {
       throw new Error('LOCAL_OFFLINE');
     }
 
-    const response = await fetch('/api/save', {
+    const response = await fetch(`/api/save?key=${shareKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

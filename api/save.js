@@ -1,13 +1,6 @@
-module.exports = async (req, res) => {
-  // CORS Headers
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  );
+const SHARE_KEY_FORMAT = /^[A-Za-z0-9_-]{8,64}$/;
 
+module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
@@ -24,12 +17,19 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: 'Vercel KV is not connected. Please create and connect KV database in Vercel Storage settings.' });
   }
 
+  // Writes always require a valid per-couple share key — the legacy shared
+  // "fitness_data" record is read-only from now on.
+  const rawKey = (req.query && req.query.key) || '';
+  if (!SHARE_KEY_FORMAT.test(rawKey)) {
+    return res.status(400).json({ error: 'Missing or invalid share key.' });
+  }
+  const kvKey = `fitness_data_${rawKey}`;
+
   try {
     const data = req.body;
     const bodyStr = typeof data === 'string' ? data : JSON.stringify(data);
 
-    // Call Vercel KV REST API to SET key "fitness_data"
-    const response = await fetch(`${kvUrl}/set/fitness_data`, {
+    const response = await fetch(`${kvUrl}/set/${kvKey}`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${kvToken}`
