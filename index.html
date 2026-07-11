@@ -268,6 +268,60 @@
             </div>
           </section>
 
+        </div> <!-- End of pane-kitchen -->
+
+        <!-- Tab 2: Smart Recipes & Inventory -->
+        <div class="tab-pane" id="pane-recipes">
+          <!-- Costco Inventory Management Section -->
+          <section class="log-section" style="margin-bottom: 2rem;">
+            <h2>📋 Costco 食材庫存管理</h2>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+              當您購買 Costco 食材時，可以使用 AI 照片分析並點擊「匯入為庫存採買」，或在此手動新增。烹飪食譜時，對應的庫存會自動扣除。
+            </p>
+            
+            <div class="inventory-split-grid">
+              <!-- Left: Inventory List -->
+              <div style="background: rgba(15, 23, 42, 0.2); padding: 1rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                <h3 style="margin-top: 0; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                  🥫 目前冰箱庫存列表
+                </h3>
+                <div id="inventory-list" style="max-height: 380px; overflow-y: auto; padding-right: 0.5rem;">
+                  <!-- Dynamic Inventory Items -->
+                </div>
+              </div>
+              
+              <!-- Right: Add Item Form -->
+              <div style="background: rgba(15, 23, 42, 0.2); padding: 1rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); align-self: start;">
+                <h3 style="margin-top: 0; font-size: 1rem; color: var(--text-main); margin-bottom: 1rem;">
+                  ➕ 手動新增採買食材
+                </h3>
+                <form id="add-inventory-form" class="log-form-stacked">
+                  <div class="form-group">
+                    <label for="inv-item-name">食材名稱</label>
+                    <input type="text" id="inv-item-name" placeholder="例如：去骨雞腿肉、新鮮雞蛋" required style="width: 100%;">
+                  </div>
+                  <div class="form-group-row" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 0.75rem; margin-top: 0.75rem;">
+                    <div class="form-group">
+                      <label for="inv-item-qty">採買總量</label>
+                      <input type="number" id="inv-item-qty" placeholder="例如：2000" required style="width: 100%;">
+                    </div>
+                    <div class="form-group">
+                      <label for="inv-item-unit">單位</label>
+                      <select id="inv-item-unit" style="background: rgba(15, 23, 42, 0.8); border-color: var(--border-color); color: var(--text-main); width: 100%;">
+                        <option value="g">g (克)</option>
+                        <option value="顆">顆</option>
+                        <option value="盒">盒</option>
+                        <option value="包">包</option>
+                        <option value="ml">ml</option>
+                      </select>
+                    </div>
+                  </div>
+                  <button type="submit" class="ai-action-btn primary" style="width: 100%; margin-top: 1rem;">💾 存入冰箱庫存</button>
+                </form>
+              </div>
+            </div>
+          </section>
+
           <!-- Interactive Recipes Section -->
           <section class="recipes-section">
             <h2>🍳 Costco 智慧食譜與分量調整</h2>
@@ -284,42 +338,43 @@
                 <div class="recipe-img-placeholder breakfast-bg">
                   <span class="recipe-badge">早餐</span>
                   <span class="recipe-time">⏱️ 5 分鐘</span>
-                  <h3>高蛋白穀物莓果麥片豆奶碗</h3>
+                  <h3>香蕉花生醬燕麥粥</h3>
                 </div>
                 <div class="recipe-content">
                   <div class="recipe-equipment">
-                    <span>無需烹調</span>
+                    <span>🍳 電磁爐/微波爐</span>
                   </div>
                   <div class="recipe-ingredients">
-                    <h4>🥣 食材清單</h4>
-                    <ul id="ing-list-breakfast">
+                    <h4>🥗 配料與庫存狀態</h4>
+                    <ul id="ing-list-oats">
                       <!-- Dynamic ingredients -->
                     </ul>
                   </div>
                   <div class="recipe-steps">
                     <h4>📝 烹飪步驟</h4>
                     <ol>
-                      <li>在碗中加入燕麥片與綜合穀物/堅果。</li>
-                      <li>倒入無糖豆奶，加入冷凍莓果。</li>
-                      <li>加入乳清蛋白粉，均勻攪拌至粉末溶解即可食用。</li>
+                      <li>燕麥片加水或牛奶放入微波爐中高火微波 2 分鐘。</li>
+                      <li>拌入蛋白粉與花生醬，攪拌均勻。</li>
+                      <li>最後鋪上香蕉切片即可。</li>
                     </ol>
                   </div>
+                  <button class="ai-action-btn success" style="width: 100%; margin-top: 1.25rem; font-size: 0.85rem;" onclick="cookRecipe('oats')">🍳 標記已烹飪（自動扣減庫存）</button>
                 </div>
               </div>
 
-              <!-- Recipe 2: Pork Tofu Patty -->
+              <!-- Recipe 2: Patty -->
               <div class="recipe-card">
                 <div class="recipe-img-placeholder patty-bg">
                   <span class="recipe-badge">午餐</span>
                   <span class="recipe-time">⏱️ 20 分鐘</span>
-                  <h3>豆腐洋蔥豬肉漢堡排</h3>
+                  <h3>洋蔥豆腐雞肉餅</h3>
                 </div>
                 <div class="recipe-content">
                   <div class="recipe-equipment">
-                    <span>🍳 平底鍋</span><span>💨 氣炸鍋</span>
+                    <span>🍳 不沾平底鍋/氣炸鍋</span>
                   </div>
                   <div class="recipe-ingredients">
-                    <h4>🥣 食材清單</h4>
+                    <h4>🥗 配料與庫存狀態</h4>
                     <ul id="ing-list-patty">
                       <!-- Dynamic ingredients -->
                     </ul>
@@ -327,28 +382,28 @@
                   <div class="recipe-steps">
                     <h4>📝 烹飪步驟</h4>
                     <ol>
-                      <li>將豆腐捏碎，用乾淨廚房紙巾徹底壓乾水分。洋蔥切細丁炒香放涼。</li>
-                      <li>將豬絞肉、豆腐碎、洋蔥丁、雞蛋與調味料（鹽、胡椒、醬油）混合。</li>
-                      <li>朝同方向攪拌至產生黏性，揉成圓餅狀。</li>
-                      <li>用平底鍋小火煎至熟透，或用氣炸鍋 180度烤 12-15 分鐘。</li>
+                      <li>洋蔥切末，板豆腐壓乾水分捏碎，雞胸肉剁成肉泥。</li>
+                      <li>將所有材料與雞蛋及調味料混合攪拌至有黏性。</li>
+                      <li>捏成肉餅狀，下鍋中小火煎至兩面金黃熟透即可。</li>
                     </ol>
                   </div>
+                  <button class="ai-action-btn success" style="width: 100%; margin-top: 1.25rem; font-size: 0.85rem;" onclick="cookRecipe('patty')">🍳 標記已烹飪（自動扣減庫存）</button>
                 </div>
               </div>
 
-              <!-- Recipe 3: Garlic Chicken Thigh -->
+              <!-- Recipe 3: Chicken leg -->
               <div class="recipe-card">
                 <div class="recipe-img-placeholder chicken-bg">
                   <span class="recipe-badge">晚餐</span>
                   <span class="recipe-time">⏱️ 25 分鐘</span>
-                  <h3>蒜香烤去皮雞腿排佐雙色時蔬</h3>
+                  <h3>蒜香嫩煎雞腿肉</h3>
                 </div>
                 <div class="recipe-content">
                   <div class="recipe-equipment">
-                    <span>💧 水波爐</span><span>🔥 烤箱</span><span>💨 氣炸鍋</span>
+                    <span>🍳 不沾平底鍋</span>
                   </div>
                   <div class="recipe-ingredients">
-                    <h4>🥣 食材清單</h4>
+                    <h4>🥗 配料與庫存狀態</h4>
                     <ul id="ing-list-chicken">
                       <!-- Dynamic ingredients -->
                     </ul>
@@ -356,11 +411,12 @@
                   <div class="recipe-steps">
                     <h4>📝 烹飪步驟</h4>
                     <ol>
-                      <li>去骨雞腿排徹底**去皮**（大幅降脂），用鹽、胡椒、蒜末醃製。</li>
-                      <li>花椰菜、紅蘿蔔、洋蔥切塊，淋上 1 茶匙油抓勻。</li>
-                      <li>鋪於烤盤上，送入水波爐/烤箱（200度烤 22-25 分鐘）或氣炸。</li>
+                      <li>去骨雞腿排表面劃刀，擦乾水分，抹少許鹽與黑胡椒。</li>
+                      <li>皮朝下冷鍋入鍋，中小火慢煎皮脆出油。</li>
+                      <li>翻面後加入大量蒜片，煎至雞腿肉熟透、表面金黃即可切塊。</li>
                     </ol>
                   </div>
+                  <button class="ai-action-btn success" style="width: 100%; margin-top: 1.25rem; font-size: 0.85rem;" onclick="cookRecipe('chicken')">🍳 標記已烹飪（自動扣減庫存）</button>
                 </div>
               </div>
 
@@ -369,14 +425,14 @@
                 <div class="recipe-img-placeholder egg-bg">
                   <span class="recipe-badge">配餐/晚餐</span>
                   <span class="recipe-time">⏱️ 10 分鐘</span>
-                  <h3>高蛋白毛豆仁洋蔥炒蛋</h3>
+                  <h3>毛豆滑蛋炒洋蔥</h3>
                 </div>
                 <div class="recipe-content">
                   <div class="recipe-equipment">
                     <span>🍳 平底鍋</span>
                   </div>
                   <div class="recipe-ingredients">
-                    <h4>🥣 食材清單</h4>
+                    <h4>🥗 配料與庫存狀態</h4>
                     <ul id="ing-list-egg">
                       <!-- Dynamic ingredients -->
                     </ul>
@@ -389,6 +445,7 @@
                       <li>倒入打散的蛋液，炒成滑蛋碎，加鹽調味即可。</li>
                     </ol>
                   </div>
+                  <button class="ai-action-btn success" style="width: 100%; margin-top: 1.25rem; font-size: 0.85rem;" onclick="cookRecipe('egg')">🍳 標記已烹飪（自動扣減庫存）</button>
                 </div>
               </div>
             </div>

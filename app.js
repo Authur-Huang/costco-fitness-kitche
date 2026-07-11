@@ -1,57 +1,52 @@
 // Recipe Data Definition
 const recipes = {
-  breakfast: {
-    name: "高蛋白穀物莓果麥片豆奶碗",
+  oats: {
+    name: "香蕉花生醬燕麥粥",
     ingredients: [
-      { name: "科克蘭燕麥片", male: 40, female: 40, unit: "g" },
-      { name: "綜合穀物與堅果", male: 15, female: 15, unit: "g" },
-      { name: "冷凍野生藍莓/莓果", male: 70, female: 50, unit: "g" },
-      { name: "無糖有機豆奶", male: 250, female: 200, unit: "ml" },
-      { name: "乳清蛋白粉", male: 1.5, female: 1, unit: "匙" }
+      { name: "科克蘭燕麥片", male: 50, female: 40, unit: "g" },
+      { name: "乳清蛋白粉", male: 1.5, female: 1, unit: "匙" },
+      { name: "花生醬", male: 15, female: 10, unit: "g" },
+      { name: "香蕉", male: 1, female: 0.5, unit: "根" }
     ],
     macros: {
-      male: { cal: 500, p: 50, c: 50, f: 13 },
-      female: { cal: 450, p: 38, c: 47, f: 12.5 }
+      male: { cal: 450, p: 35, c: 55, f: 12 },
+      female: { cal: 320, p: 25, c: 38, f: 8 }
     }
   },
   patty: {
-    name: "豆腐洋蔥豬肉漢堡排",
+    name: "洋蔥豆腐雞肉餅",
     ingredients: [
-      { name: "義美板豆腐 (壓乾捏碎)", male: 100, female: 75, unit: "g" },
-      { name: "豬絞肉 (Costco)", male: 100, female: 75, unit: "g" },
-      { name: "洋蔥 (切細丁)", male: 50, female: 37, unit: "g" },
-      { name: "新鮮雞蛋 (打散)", male: 0.5, female: 0.37, unit: "顆" }
+      { name: "去骨雞胸肉", male: 150, female: 120, unit: "g" },
+      { name: "板豆腐", male: 50, female: 40, unit: "g" },
+      { name: "洋蔥", male: 30, female: 20, unit: "g" },
+      { name: "新鮮雞蛋", male: 0.5, female: 0.5, unit: "顆" }
     ],
     macros: {
-      male: { cal: 290, p: 24, c: 8, f: 18.5 },
-      female: { cal: 220, p: 18, c: 6, f: 14 }
+      male: { cal: 320, p: 38, c: 6, f: 14 },
+      female: { cal: 250, p: 30, c: 5, f: 11 }
     }
   },
   chicken: {
-    name: "去皮烤雞腿排佐雙色時蔬",
+    name: "蒜香嫩煎雞腿肉",
     ingredients: [
-      { name: "去骨去皮雞腿肉 (Costco)", male: 250, female: 150, unit: "g" },
-      { name: "冷凍花椰菜 (Costco)", male: 75, female: 50, unit: "g" },
-      { name: "紅蘿蔔", male: 40, female: 25, unit: "g" },
-      { name: "洋蔥", male: 40, female: 25, unit: "g" },
-      { name: "初榨橄欖油", male: 0.5, female: 0.5, unit: "茶匙" }
+      { name: "去骨雞腿肉", male: 250, female: 150, unit: "g" },
+      { name: "蒜頭", male: 15, female: 10, unit: "g" }
     ],
     macros: {
-      male: { cal: 430, p: 50, c: 8, f: 22 },
-      female: { cal: 280, p: 30, c: 5, f: 15 }
+      male: { cal: 420, p: 48, c: 2, f: 23 },
+      female: { cal: 260, p: 29, c: 1, f: 14 }
     }
   },
   egg: {
-    name: "高蛋白毛豆仁洋蔥炒蛋",
+    name: "毛豆滑蛋炒洋蔥",
     ingredients: [
-      { name: "冷凍毛豆仁 (Costco)", male: 75, female: 75, unit: "g" },
-      { name: "新鮮雞蛋", male: 1.5, female: 1.5, unit: "顆" },
-      { name: "洋蔥絲", male: 25, female: 25, unit: "g" },
-      { name: "初榨橄欖油", male: 0.5, female: 0.5, unit: "茶匙" }
+      { name: "冷凍毛豆仁", male: 80, female: 60, unit: "g" },
+      { name: "新鮮雞蛋", male: 2, female: 1.5, unit: "顆" },
+      { name: "洋蔥", male: 30, female: 20, unit: "g" }
     ],
     macros: {
-      male: { cal: 240, p: 20, c: 9, f: 13.5 },
-      female: { cal: 240, p: 20, c: 9, f: 13.5 }
+      male: { cal: 280, p: 22, c: 10, f: 15 },
+      female: { cal: 210, p: 16, c: 8, f: 11 }
     }
   }
 };
@@ -113,7 +108,8 @@ let fitnessDB = {
   maleWeightHistory: [],   // { date, weight, fat }
   femaleWeightHistory: [], // { date, weight, fat }
   foodLogs: [],            // { date, who, meal, name, cal, p }
-  workoutLogs: []          // { date, who, name, desc }
+  workoutLogs: [],          // { date, who, name, desc }
+  costcoInventory: []      // { name, total, remaining, unit }
 };
 
 // Chart instances
@@ -184,11 +180,21 @@ const imageOverlayContainer = document.getElementById('image-overlay-container')
 
 // Navigation Tabs
 const navTabKitchen = document.getElementById('tab-nav-kitchen');
+const navTabRecipes = document.getElementById('tab-nav-recipes');
 const navTabLog = document.getElementById('tab-nav-log');
 const navTabCharts = document.getElementById('tab-nav-charts');
 const paneKitchen = document.getElementById('pane-kitchen');
+const paneRecipes = document.getElementById('pane-recipes');
 const paneLog = document.getElementById('pane-log');
 const paneCharts = document.getElementById('pane-charts');
+
+// Inventory Elements
+const inventoryList = document.getElementById('inventory-list');
+const addInventoryForm = document.getElementById('add-inventory-form');
+const invItemName = document.getElementById('inv-item-name');
+const invItemQty = document.getElementById('inv-item-qty');
+const invItemUnit = document.getElementById('inv-item-unit');
+const importToInventoryBtn = document.getElementById('import-to-inventory-btn');
 
 // Log Form elements
 const logMaleDate = document.getElementById('log-male-date');
@@ -331,12 +337,16 @@ function setupAIEventListeners() {
   analyzeTextBtn.addEventListener('click', analyzeText);
   analyzePhotoBtn.addEventListener('click', analyzePhoto);
   importIngredientsBtn.addEventListener('click', importIngredientsToLogs);
+  if (importToInventoryBtn) {
+    importToInventoryBtn.addEventListener('click', importIngredientsToInventory);
+  }
 }
 
 // Setup Navigation Pane Switching
 function setupNavigation() {
   const tabs = [
     { nav: navTabKitchen, pane: paneKitchen },
+    { nav: navTabRecipes, pane: paneRecipes },
     { nav: navTabLog, pane: paneLog },
     { nav: navTabCharts, pane: paneCharts }
   ];
@@ -458,6 +468,41 @@ function setupLogFormListeners() {
   histTabFood.addEventListener('click', () => setHistoryTabActive('food'));
   histTabWorkout.addEventListener('click', () => setHistoryTabActive('workout'));
   histTabWeight.addEventListener('click', () => setHistoryTabActive('weight'));
+
+  // Add Inventory Form submission
+  if (addInventoryForm) {
+    addInventoryForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = invItemName.value.trim();
+      const qty = parseFloat(invItemQty.value) || 0;
+      const unit = invItemUnit.value;
+      
+      if (!name || qty <= 0) return;
+      
+      // Look for duplicate exact name
+      let existing = fitnessDB.costcoInventory.find(inv => inv.name === name);
+      if (existing) {
+        existing.total += qty;
+        existing.remaining += qty;
+      } else {
+        fitnessDB.costcoInventory.push({
+          name: name,
+          total: qty,
+          remaining: qty,
+          unit: unit
+        });
+      }
+      
+      // Reset form
+      invItemName.value = '';
+      invItemQty.value = '';
+      
+      saveSharedData();
+      renderInventoryList();
+      updateRecipes();
+      alert(`已成功將「${name}」${qty}${unit} 存入冰箱庫存！`);
+    });
+  }
 }
 
 // Workout Calorie Auto-Estimation Setup
@@ -806,27 +851,76 @@ function updateRecipes() {
   Object.keys(recipes).forEach(recipeKey => {
     const recipe = recipes[recipeKey];
     const ul = document.getElementById(`ing-list-${recipeKey}`);
+    if (!ul) return;
     ul.innerHTML = '';
 
     recipe.ingredients.forEach(ing => {
       const li = document.createElement('li');
+      li.style.display = 'flex';
+      li.style.justifyContent = 'space-between';
+      li.style.alignItems = 'center';
+      li.style.padding = '0.35rem 0';
+      li.style.borderBottom = '1px solid rgba(255, 255, 255, 0.05)';
+
       const nameSpan = document.createElement('span');
       nameSpan.className = 'ing-name';
+      nameSpan.style.color = 'var(--text-main)';
+      nameSpan.style.fontWeight = '500';
       nameSpan.textContent = ing.name;
 
       const weightSpan = document.createElement('span');
       weightSpan.className = 'ing-weight';
+      weightSpan.style.fontSize = '0.8rem';
+      weightSpan.style.color = 'var(--text-muted)';
 
+      let needed = 0;
       if (currentMode === 'both') {
-        weightSpan.textContent = `男生: ${ing.male}${ing.unit} | 女生: ${ing.female}${ing.unit}`;
+        needed = ing.male + ing.female;
+        weightSpan.innerHTML = `👦${ing.male}${ing.unit} + 👧${ing.female}${ing.unit} = <strong style="color:var(--text-main);">${needed}${ing.unit}</strong>`;
       } else if (currentMode === 'male') {
-        weightSpan.textContent = `${ing.male}${ing.unit}`;
+        needed = ing.male;
+        weightSpan.innerHTML = `<strong style="color:var(--text-main);">${needed}${ing.unit}</strong>`;
       } else if (currentMode === 'female') {
-        weightSpan.textContent = `${ing.female}${ing.unit}`;
+        needed = ing.female;
+        weightSpan.innerHTML = `<strong style="color:var(--text-main);">${needed}${ing.unit}</strong>`;
       }
 
+      // Check stock levels
+      let invItem = null;
+      if (fitnessDB.costcoInventory) {
+        invItem = fitnessDB.costcoInventory.find(inv => inv.name.includes(ing.name) || ing.name.includes(inv.name));
+      }
+      const rem = invItem ? invItem.remaining : 0;
+
+      const stockBadge = document.createElement('span');
+      stockBadge.style.fontSize = '0.75rem';
+      stockBadge.style.padding = '0.1rem 0.4rem';
+      stockBadge.style.borderRadius = '4px';
+      stockBadge.style.marginLeft = '0.5rem';
+      stockBadge.style.display = 'inline-block';
+
+      if (rem >= needed && needed > 0) {
+        stockBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+        stockBadge.style.color = '#34d399';
+        stockBadge.textContent = `✔️ 庫存足 (${Math.round(rem * 10)/10}${ing.unit})`;
+      } else if (needed > 0) {
+        stockBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+        stockBadge.style.color = '#f87171';
+        stockBadge.textContent = `❌ 庫存缺 (${Math.round((needed - rem) * 10)/10}${ing.unit})`;
+      } else {
+        stockBadge.style.background = 'rgba(255, 255, 255, 0.05)';
+        stockBadge.style.color = 'var(--text-muted)';
+        stockBadge.textContent = `無需`;
+      }
+
+      const rightDiv = document.createElement('div');
+      rightDiv.style.display = 'flex';
+      rightDiv.style.alignItems = 'center';
+      rightDiv.appendChild(weightSpan);
+      rightDiv.appendChild(stockBadge);
+
       li.appendChild(nameSpan);
-      li.appendChild(weightSpan);
+      li.appendChild(rightDiv);
       ul.appendChild(li);
     });
   });
@@ -1144,6 +1238,197 @@ function importIngredientsToLogs() {
   alert(`成功！已將 AI 解析的總計 ${Math.round(totalCal)} kcal / ${Math.round(totalP)}g 蛋白質 匯入至 ${dateStr} ${whoLabel} 的 ${targetMeal} 飲食日誌。`);
 }
 
+// Import parsed items as Costco purchased inventory items
+function importIngredientsToInventory() {
+  if (parsedIngredientsList.length === 0) return;
+
+  parsedIngredientsList.forEach(item => {
+    const name = item.name.trim();
+    const qty = parseFloat(item.weight) || 0;
+    const unit = item.unit || 'g';
+
+    if (qty <= 0) return;
+
+    // Fuzzy matching or exact matching
+    let existing = fitnessDB.costcoInventory.find(inv => inv.name.includes(name) || name.includes(inv.name));
+    if (existing) {
+      existing.total += qty;
+      existing.remaining += qty;
+    } else {
+      fitnessDB.costcoInventory.push({
+        name: name,
+        total: qty,
+        remaining: qty,
+        unit: unit
+      });
+    }
+  });
+
+  saveSharedData();
+  renderInventoryList();
+  updateRecipes();
+
+  navTabRecipes.click(); // Automatically switch to the recipes tab
+  alert('成功！已將 AI 分析的食材採買存入冰箱庫存管理。');
+}
+
+function renderInventoryList() {
+  if (!inventoryList) return;
+  inventoryList.innerHTML = '';
+  
+  if (!fitnessDB.costcoInventory || fitnessDB.costcoInventory.length === 0) {
+    inventoryList.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding: 2rem 0; font-size:0.85rem;">🥫 庫存中無食材，請手動新增或使用 AI 匯入！</p>';
+    return;
+  }
+  
+  fitnessDB.costcoInventory.forEach((item, index) => {
+    const percent = Math.min((item.remaining / item.total) * 100, 100);
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'inventory-item';
+    itemDiv.style.marginBottom = '1.25rem';
+    itemDiv.style.background = 'rgba(15, 23, 42, 0.4)';
+    itemDiv.style.padding = '0.75rem';
+    itemDiv.style.borderRadius = '10px';
+    itemDiv.style.border = '1px solid rgba(255,255,255,0.05)';
+    
+    // Determine color based on inventory level
+    let barColor = '#10b981'; // green
+    if (percent < 25) {
+      barColor = '#ef4444'; // red
+    } else if (percent < 50) {
+      barColor = '#f59e0b'; // orange
+    }
+    
+    itemDiv.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+        <strong style="color:var(--text-main); font-size:0.9rem;">${item.name}</strong>
+        <div style="display:flex; align-items:center; gap:0.4rem;">
+          <input type="number" class="inline-edit-input" style="width:65px; padding:0.1rem 0.25rem; text-align:center; font-weight:bold; font-size:0.8rem; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:var(--text-main); border-radius:4px;" value="${Math.round(item.remaining * 10) / 10}" onchange="updateInventoryItem(${index}, parseFloat(this.value) || 0)">
+          <span style="font-size:0.75rem; color:var(--text-muted);">${item.unit} / 總 ${item.total}${item.unit}</span>
+          <button class="remove-btn" style="position:static; padding:0.15rem 0.35rem; font-size:0.7rem; border-radius:4px; cursor:pointer;" onclick="deleteInventoryItem(${index})">🗑️</button>
+        </div>
+      </div>
+      <div class="bar-bg" style="height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden;">
+        <div class="bar-fill" style="width:${percent}%; height:100%; background:${barColor}; transition:width 0.3s ease;"></div>
+      </div>
+    `;
+    inventoryList.appendChild(itemDiv);
+  });
+}
+
+window.updateInventoryItem = function(index, val) {
+  if (fitnessDB.costcoInventory && fitnessDB.costcoInventory[index]) {
+    fitnessDB.costcoInventory[index].remaining = Math.max(0, Math.min(val, fitnessDB.costcoInventory[index].total));
+    saveSharedData();
+    renderInventoryList();
+    updateRecipes();
+  }
+};
+
+window.deleteInventoryItem = function(index) {
+  if (fitnessDB.costcoInventory && fitnessDB.costcoInventory[index]) {
+    const name = fitnessDB.costcoInventory[index].name;
+    if (confirm(`確定要刪除庫存中的「${name}」嗎？`)) {
+      fitnessDB.costcoInventory.splice(index, 1);
+      saveSharedData();
+      renderInventoryList();
+      updateRecipes();
+    }
+  }
+};
+
+window.cookRecipe = function(recipeKey) {
+  const recipe = recipes[recipeKey];
+  if (!recipe) return;
+  
+  // 1. Calculate required ingredients based on current portion mode
+  const mode = currentMode; // 'both', 'male', 'female'
+  
+  // Verify if we have enough stock for all ingredients
+  let outOfStock = [];
+  recipe.ingredients.forEach(ing => {
+    let needed = 0;
+    if (mode === 'both') {
+      needed = ing.male + ing.female;
+    } else if (mode === 'male') {
+      needed = ing.male;
+    } else if (mode === 'female') {
+      needed = ing.female;
+    }
+    
+    // Find item
+    let invItem = fitnessDB.costcoInventory.find(inv => inv.name.includes(ing.name) || ing.name.includes(inv.name));
+    if (!invItem || invItem.remaining < needed) {
+      const remVal = invItem ? invItem.remaining : 0;
+      outOfStock.push(`${ing.name} (缺 ${Math.round((needed - remVal) * 10) / 10}${ing.unit})`);
+    }
+  });
+  
+  if (outOfStock.length > 0) {
+    if (!confirm(`⚠️ 以下食材庫存不足：\n${outOfStock.join('\n')}\n\n是否仍然強制標記已烹飪？(庫存將扣至 0)`)) {
+      return;
+    }
+  }
+  
+  // 2. Deduct from inventory
+  recipe.ingredients.forEach(ing => {
+    let needed = 0;
+    if (mode === 'both') {
+      needed = ing.male + ing.female;
+    } else if (mode === 'male') {
+      needed = ing.male;
+    } else if (mode === 'female') {
+      needed = ing.female;
+    }
+    
+    let invItem = fitnessDB.costcoInventory.find(inv => inv.name.includes(ing.name) || ing.name.includes(inv.name));
+    if (invItem) {
+      invItem.remaining = Math.max(0, invItem.remaining - needed);
+    }
+  });
+  
+  // 3. Save and refresh
+  saveSharedData();
+  renderInventoryList();
+  updateRecipes();
+  
+  // 4. Ask to auto-import to Daily Log
+  if (confirm(`🍳 庫存已成功扣減！\n是否要將此料理「${recipe.name}」自動匯入今天的飲食日誌？`)) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    // Calculate total calories and protein of the meal for this mode
+    let totalCal = 0;
+    let totalP = 0;
+    if (mode === 'both') {
+      totalCal = recipe.macros.male.cal + recipe.macros.female.cal;
+      totalP = recipe.macros.male.p + recipe.macros.female.p;
+    } else if (mode === 'male') {
+      totalCal = recipe.macros.male.cal;
+      totalP = recipe.macros.male.p;
+    } else if (mode === 'female') {
+      totalCal = recipe.macros.female.cal;
+      totalP = recipe.macros.female.p;
+    }
+    
+    fitnessDB.foodLogs.push({
+      date: todayStr,
+      who: mode,
+      meal: "午餐", // default to lunch
+      name: `烹飪: ${recipe.name}`,
+      cal: totalCal,
+      p: totalP
+    });
+    fitnessDB.foodLogs.sort((a,b) => b.date.localeCompare(a.date));
+    
+    calculateTargets();
+    saveSharedData();
+    renderHistoryTable();
+    
+    navTabLog.click(); // Switch to the shared log tab
+    alert('已成功匯入今日飲食日誌！');
+  }
+};
+
 // Render dynamic charts using Chart.js
 function drawCharts() {
   const dates = Array.from(new Set([
@@ -1269,6 +1554,7 @@ async function loadSharedData() {
       if (cloudData.femaleWeightHistory) fitnessDB.femaleWeightHistory = cloudData.femaleWeightHistory;
       if (cloudData.foodLogs) fitnessDB.foodLogs = cloudData.foodLogs;
       if (cloudData.workoutLogs) fitnessDB.workoutLogs = cloudData.workoutLogs;
+      if (cloudData.costcoInventory) fitnessDB.costcoInventory = cloudData.costcoInventory;
       
       // Sync sidebar inputs with the latest record
       if (fitnessDB.maleWeightHistory.length > 0) {
@@ -1296,7 +1582,19 @@ async function loadSharedData() {
     }
   }
 
+  // Set default sample inventory if empty
+  if (!fitnessDB.costcoInventory || fitnessDB.costcoInventory.length === 0) {
+    fitnessDB.costcoInventory = [
+      { name: "去骨雞腿肉", total: 2000, remaining: 1200, unit: "g" },
+      { name: "板豆腐", total: 900, remaining: 600, unit: "g" },
+      { name: "新鮮雞蛋", total: 30, remaining: 18, unit: "顆" },
+      { name: "冷凍毛豆仁", total: 1000, remaining: 850, unit: "g" }
+    ];
+  }
+
+  renderInventoryList();
   calculateTargets();
+  updateRecipes();
   renderHistoryTable();
 }
 

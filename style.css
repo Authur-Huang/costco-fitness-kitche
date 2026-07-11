@@ -1209,4 +1209,16 @@ textarea#text-input:focus {
   width: 100%;
 }
 
+/* Costco Inventory Split Grid Layout */
+.inventory-split-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 1.5rem;
+}
+@media (max-width: 768px) {
+  .inventory-split-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 
