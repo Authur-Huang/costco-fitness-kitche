@@ -889,7 +889,7 @@ function displayAnalysisResults() {
   parsedIngredientsList.forEach((item, index) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><input type="text" class="inline-edit-input" value="${item.name}" onchange="updateAiIngredient(${index}, 'name', this.value)"></td>
+      <td><input type="text" class="inline-edit-input" style="min-width: 120px; width: 100%;" value="${item.name}" onchange="updateAiIngredient(${index}, 'name', this.value)"></td>
       <td>
         <div style="display:flex; gap:0.25rem; align-items:center;">
           <input type="number" class="inline-edit-input" style="width:60px;" value="${item.weight}" onchange="updateAiIngredient(${index}, 'weight', parseFloat(this.value) || 0)">
