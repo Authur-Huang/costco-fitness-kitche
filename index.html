@@ -9,9 +9,19 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Global Error Logger for Mobile Debugging -->
+  <script>
+    window.onerror = function(message, source, lineno, colno, error) {
+      alert("JS 錯誤: " + message + "\n來源: " + source + "\n行: " + lineno + "\n堆疊: " + (error ? error.stack : '無'));
+      return false;
+    };
+    window.onunhandledrejection = function(event) {
+      alert("Promise 錯誤: " + event.reason);
+    };
+  </script>
 </head>
 <body>
   <div class="app-container">
@@ -543,6 +553,6 @@
   </div>
 
   <!-- JavaScript logic -->
-  <script src="app.js"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>
