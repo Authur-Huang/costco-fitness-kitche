@@ -302,6 +302,7 @@ let activeHistTab = 'food';
 // Initialization
 function init() {
   initShareKey();
+  lastKnownDate = getLocalDateStr();
   setDefaultDates();
   loadFromLocalStorage();
   calculateTargets();
@@ -318,26 +319,68 @@ function init() {
 }
 
 // Re-pull cloud data when returning to the page (reduces stale-overwrite risk
-// between two devices), skipping while the user is typing in a field.
+// between two devices) and keep dates aligned with the device clock,
+// skipping while the user is typing in a field.
 function setupAutoRefresh() {
-  const refresh = () => {
+  const isTyping = () => {
     const ae = document.activeElement;
-    if (ae && ['INPUT', 'TEXTAREA', 'SELECT'].includes(ae.tagName)) return;
+    return ae && ['INPUT', 'TEXTAREA', 'SELECT'].includes(ae.tagName);
+  };
+
+  const refresh = () => {
+    if (isTyping()) return;
+    syncDatesWithDevice();
     loadSharedData();
   };
+
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) refresh();
   });
   setInterval(refresh, 90000);
+
+  // Lightweight date-only check so the midnight rollover (or re-opening the
+  // phone days later) never waits on a full cloud refresh cycle
+  setInterval(() => {
+    if (!isTyping()) syncDatesWithDevice();
+  }, 30000);
 }
 
-// Set default dates to today
+// Local device date as YYYY-MM-DD.
+// Never use toISOString() for "today": it returns the UTC date, which in
+// UTC+8 is still *yesterday* between 00:00 and 08:00 local time.
+function getLocalDateStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// Set default dates to today (device local time)
 function setDefaultDates() {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateStr();
   workoutLogDate.value = today;
   aiLogDate.value = today;
   if (chartMaleDate) chartMaleDate.value = today;
   if (chartFemaleDate) chartFemaleDate.value = today;
+}
+
+// Keep on-screen dates in sync with the device clock. When the local date
+// rolls over (past midnight, or the phone re-opens the page days later),
+// date inputs still holding the old auto-filled "today" advance to the new
+// date, and today's intake sums are recalculated. Inputs the user changed
+// to a different date on purpose are left untouched.
+let lastKnownDate = null;
+
+function syncDatesWithDevice() {
+  const today = getLocalDateStr();
+  if (today === lastKnownDate) return;
+
+  [workoutLogDate, aiLogDate, chartMaleDate, chartFemaleDate].forEach(input => {
+    if (input && (!input.value || input.value === lastKnownDate)) {
+      input.value = today;
+    }
+  });
+
+  lastKnownDate = today;
+  calculateTargets(); // refresh "today" sums for the new date
 }
 
 // Setup Event Listeners
@@ -874,7 +917,7 @@ function getNutritionTargets(who) {
 
 // Sum today's logged nutrition & workout burn per person ('both' is split 50/50)
 function computeTodayTotals() {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateStr();
   const blank = () => ({ cal: 0, p: 0, c: 0, f: 0, fiber: 0, sodium: 0, burned: 0 });
   const male = blank(), female = blank();
 
@@ -1449,7 +1492,7 @@ function importIngredientsToLogs() {
 
   const targetWho = aiTargetWho.value;
   const targetMeal = aiMealCategory.value;
-  const dateStr = aiLogDate.value || new Date().toISOString().split('T')[0];
+  const dateStr = aiLogDate.value || getLocalDateStr();
 
   // Combine items to import as a single aggregate entry
   let totalCal = 0, totalP = 0, totalC = 0, totalF = 0, totalFiber = 0, totalSodium = 0;
@@ -1682,7 +1725,7 @@ window.cookRecipe = function(recipeKey) {
   
   // 4. Ask to auto-import to Daily Log
   if (confirm(`🍳 庫存已成功扣減！\n是否要將此料理「${recipe.name}」自動匯入今天的飲食日誌？`)) {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateStr();
     
     // Calculate total macros of the meal for this mode
     let totalCal = 0, totalP = 0, totalC = 0, totalF = 0;
