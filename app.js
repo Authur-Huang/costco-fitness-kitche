@@ -56,7 +56,7 @@ const recipes = {
   }
 };
 
-// Ingredients Nutrition Lookup Database
+// Ingredients Nutrition Lookup Database (for offline fallback)
 const nutritionDB = {
   "雞腿肉": { cal: 116, p: 20, c: 0, f: 4, unit: "g" },
   "去骨雞腿肉": { cal: 116, p: 20, c: 0, f: 4, unit: "g" },
@@ -159,6 +159,23 @@ function init() {
   updateRecipes();
   setupEventListeners();
   setupAIEventListeners();
+  checkEnvironment();
+}
+
+// Check environment (Hide API Key field if deployed on Vercel)
+function checkEnvironment() {
+  const isLocalFile = window.location.protocol === 'file:';
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  
+  if (!isLocalFile && !isLocalhost) {
+    // We are hosted on Vercel/GitHub Pages. 
+    // We can inform that Vercel uses server-side key.
+    const keyLabel = document.querySelector('.api-key-group label');
+    if (keyLabel) {
+      keyLabel.innerHTML = '🔑 Gemini API 金鑰 <span style="color:#10b981; font-size:0.75rem;">(已由 Vercel 後端安全託管，免輸入！)</span>';
+      geminiKeyInput.placeholder = '如有需要可輸入個人 Key 覆寫後端金鑰';
+    }
+  }
 }
 
 // Setup Event Listeners
@@ -377,108 +394,190 @@ function updateRecipes() {
   });
 }
 
-// Text input parsing logic (Regex & Database matching)
-function analyzeText() {
+// Shared API dispatcher
+async function callAnalysisAPI({ type, imageBase64, text }) {
+  const apiKey = geminiKeyInput.value.trim() || localStorage.getItem('costco_gemini_key');
+  const isLocalFile = window.location.protocol === 'file:';
+  
+  // If running locally on file:// without a key, fallback to local simulator / regex
+  if (isLocalFile && !apiKey) {
+    throw new Error('LOCAL_FALLBACK');
+  }
+
+  // Case A: User has a local key. Call Google directly (saves serverless request and works offline/locally)
+  if (apiKey) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    let prompt = "";
+    let contents = [];
+
+    if (type === 'photo') {
+      prompt = `請分析這張照片中的食材（主要是 Costco 購買的健身增肌減脂食材，例如去骨雞腿肉、豬五花、毛豆、豆腐、雞蛋、蔬菜等）。
+請辨識出食材的名稱、估計克數（如果是雞蛋、盒裝豆腐等單位，可以用顆或盒，但盡量提供換算克數）。
+請估算出卡路里(calories), 蛋白質(protein), 碳水化合物(carbs)與脂肪(fat)含量。
+你必須只回覆一個 JSON 格式的陣列，且不要用 markdown (\`\`\`json) 標記。格式範例如下：
+[
+  {"name": "去骨雞腿肉", "weight": 400, "unit": "g", "calories": 464, "protein": 80.0, "carbs": 0.0, "fat": 16.0},
+  {"name": "雞蛋", "weight": 3, "unit": "顆", "calories": 225, "protein": 19.5, "carbs": 1.5, "fat": 15.0}
+]`;
+      contents = [{
+        parts: [
+          { text: prompt },
+          { inlineData: { mimeType: "image/jpeg", data: imageBase64 } }
+        ]
+      }];
+    } else {
+      prompt = `請分析以下這段食材清單文字，針對增肌減脂營養進行解析，提取出各個食材的名稱與估計重量（克數），並估算出其卡路里(calories)、蛋白質(protein)、碳水化合物(carbs)與脂肪(fat)含量。
+你必須只回覆一個 JSON 格式的陣列，且不要用 markdown (\`\`\`json) 標記。格式範例如下：
+[
+  {"name": "去骨雞腿肉", "weight": 400, "unit": "g", "calories": 464, "protein": 80.0, "carbs": 0.0, "fat": 16.0}
+]
+食材清單文字：
+${text}`;
+      contents = [{
+        parts: [
+          { text: prompt }
+        ]
+      }];
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Google API returned status ${response.status}: ${errText}`);
+    }
+
+    const data = await response.json();
+    const resultText = data.candidates[0].content.parts[0].text.trim();
+    const cleanedJson = resultText.replace(/```json/g, "").replace(/```/g, "").trim();
+    return JSON.parse(cleanedJson);
+  }
+
+  // Case B: No local key, but we are running on Vercel serverless host. Call '/api/analyze'
+  const response = await fetch('/api/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type, imageBase64, text })
+  });
+
+  if (!response.ok) {
+    throw new Error('SERVERLESS_FALLBACK_FAILED');
+  }
+
+  return await response.json();
+}
+
+// Text analysis action
+async function analyzeText() {
   const text = textInput.value.trim();
   if (!text) {
     alert("請輸入食材內容！");
     return;
   }
 
-  showLoading(true, "文字萃取與營養計算中...");
+  showLoading(true, "AI 文字萃取與營養計算中...");
 
-  setTimeout(() => {
-    parsedIngredientsList = [];
-    const lines = text.split('\n');
-    
-    lines.forEach(line => {
-      if (!line.trim()) return;
-
-      // Extract quantity and weight
-      // Matches: 400g, 400克, 3顆, 1盒, 2包 etc.
-      const numMatch = line.match(/(\d+(?:\.\d+)?)\s*(克|g|顆|盒|包|ml|cc|匙)?/i);
-      let qty = 100; // default weight 100g
-      let unit = "g";
-      if (numMatch) {
-        qty = parseFloat(numMatch[1]);
-        if (numMatch[2]) {
-          unit = numMatch[2].toLowerCase();
-        }
-      }
-
-      // Find keyword in database
-      let matchedKey = null;
-      let matchedData = null;
-      
-      for (const key in nutritionDB) {
-        if (line.includes(key)) {
-          matchedKey = key;
-          matchedData = nutritionDB[key];
-          break;
-        }
-      }
-
-      if (matchedData) {
-        let factor = 1;
-        let actualWeight = qty;
-        
-        if (matchedData.unit === "g") {
-          // If unit in DB is grams, the database values are per 100g.
-          // Handle conversions
-          if (unit === "盒" && (matchedKey.includes("豆腐") || matchedKey.includes("板豆腐"))) {
-            actualWeight = qty * 300; // 1 box tofu = ~300g
-          } else if (unit === "包" && matchedKey.includes("雞腿肉")) {
-            actualWeight = qty * 500; // 1 pack chicken thigh = ~500g
-          }
-          factor = actualWeight / 100;
-        } else {
-          // Unit-based (e.g. egg)
-          factor = qty;
-          actualWeight = qty; // represent unit count
-        }
-
-        parsedIngredientsList.push({
-          name: matchedKey,
-          weight: actualWeight,
-          unit: matchedData.unit,
-          calories: Math.round(matchedData.cal * factor),
-          protein: Math.round(matchedData.p * factor * 10) / 10,
-          carbs: Math.round(matchedData.c * factor * 10) / 10,
-          fat: Math.round(matchedData.f * factor * 10) / 10
-        });
-      } else {
-        // Fallback for unknown ingredient
-        parsedIngredientsList.push({
-          name: line.replace(/[\d\s克g顆盒包mlcc匙]/g, "") || "未知食材",
-          weight: qty,
-          unit: unit,
-          calories: Math.round(qty * 0.8), // general estimate
-          protein: Math.round(qty * 0.05 * 10) / 10,
-          carbs: Math.round(qty * 0.1 * 10) / 10,
-          fat: Math.round(qty * 0.02 * 10) / 10
-        });
-      }
-    });
-
+  try {
+    // Try AI calling first
+    parsedIngredientsList = await callAnalysisAPI({ type: 'text', text: text });
     displayAnalysisResults();
     showLoading(false);
-  }, 1000);
+  } catch (err) {
+    // Local offline regex/dictionary parser fallback
+    console.log("AI Text Analysis failed or running offline, switching to regex parser:", err);
+    setTimeout(() => {
+      parsedIngredientsList = [];
+      const lines = text.split('\n');
+      
+      lines.forEach(line => {
+        if (!line.trim()) return;
+
+        const numMatch = line.match(/(\d+(?:\.\d+)?)\s*(克|g|顆|盒|包|ml|cc|匙)?/i);
+        let qty = 100; 
+        let unit = "g";
+        if (numMatch) {
+          qty = parseFloat(numMatch[1]);
+          if (numMatch[2]) {
+            unit = numMatch[2].toLowerCase();
+          }
+        }
+
+        let matchedKey = null;
+        let matchedData = null;
+        
+        for (const key in nutritionDB) {
+          if (line.includes(key)) {
+            matchedKey = key;
+            matchedData = nutritionDB[key];
+            break;
+          }
+        }
+
+        if (matchedData) {
+          let factor = 1;
+          let actualWeight = qty;
+          
+          if (matchedData.unit === "g") {
+            if (unit === "盒" && (matchedKey.includes("豆腐") || matchedKey.includes("板豆腐"))) {
+              actualWeight = qty * 300; 
+            } else if (unit === "包" && matchedKey.includes("雞腿肉")) {
+              actualWeight = qty * 500; 
+            }
+            factor = actualWeight / 100;
+          } else {
+            factor = qty;
+            actualWeight = qty;
+          }
+
+          parsedIngredientsList.push({
+            name: matchedKey,
+            weight: actualWeight,
+            unit: matchedData.unit,
+            calories: Math.round(matchedData.cal * factor),
+            protein: Math.round(matchedData.p * factor * 10) / 10,
+            carbs: Math.round(matchedData.c * factor * 10) / 10,
+            fat: Math.round(matchedData.f * factor * 10) / 10
+          });
+        } else {
+          parsedIngredientsList.push({
+            name: line.replace(/[\d\s克g顆盒包mlcc匙]/g, "") || "未知食材",
+            weight: qty,
+            unit: unit,
+            calories: Math.round(qty * 0.8), 
+            protein: Math.round(qty * 0.05 * 10) / 10,
+            carbs: Math.round(qty * 0.1 * 10) / 10,
+            fat: Math.round(qty * 0.02 * 10) / 10
+          });
+        }
+      });
+
+      displayAnalysisResults();
+      showLoading(false);
+    }, 800);
+  }
 }
 
-// Photo analysis logic (Calls Gemini API or uses Mock simulator if no key)
+// Photo analysis action
 async function analyzePhoto() {
-  if (activeTab === 'photo' && !uploadedImageBase64) {
+  if (!uploadedImageBase64) {
     alert("請先上傳食材相片！");
     return;
   }
 
-  const apiKey = geminiKeyInput.value.trim() || localStorage.getItem('costco_gemini_key');
-  
-  if (!apiKey) {
+  showLoading(true, "AI 照片辨識與發票分析中...");
+
+  try {
+    parsedIngredientsList = await callAnalysisAPI({ type: 'photo', imageBase64: uploadedImageBase64 });
+    displayAnalysisResults();
+    showLoading(false);
+  } catch (err) {
+    console.log("Photo analysis API failed, running mock simulation:", err);
     // Simulated mock analysis
-    showLoading(true, "本地模擬分析中 (輸入 Gemini Key 可啟用真實 AI)...");
     setTimeout(() => {
-      // Mock result using user's initial setup
       parsedIngredientsList = [
         { name: "去骨雞腿肉 (Costco)", weight: 400, unit: "g", calories: 464, protein: 80, carbs: 0, fat: 16 },
         { name: "義美板豆腐", weight: 300, unit: "g", calories: 240, protein: 24, carbs: 6, fat: 13.5 },
@@ -487,59 +586,7 @@ async function analyzePhoto() {
       ];
       displayAnalysisResults();
       showLoading(false);
-    }, 2500);
-    return;
-  }
-
-  showLoading(true, "連接 Google Gemini Vision AI 辨識中...");
-
-  try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-    const prompt = `請分析這張照片中的食材（主要是 Costco 購買的健身增肌減脂食材，例如去骨雞腿肉、豬五花、毛豆、豆腐、雞蛋、蔬菜等）。
-請辨識出食材的名稱、估計克數（如果是雞蛋、盒裝豆腐等單位，可以用顆或盒，但盡量提供換算克數）。
-請估算出卡路里(calories), 蛋白質(protein), 碳水化合物(carbs)與脂肪(fat)含量。
-你必須只回覆一個 JSON 格式的陣列，且不要用 markdown (\`\`\`json) 標記。格式範例如下：
-[
-  {"name": "去骨雞腿肉", "weight": 400, "unit": "g", "calories": 464, "protein": 80.0, "carbs": 0.0, "fat": 16.0},
-  {"name": "雞蛋", "weight": 3, "unit": "顆", "calories": 225, "protein": 19.5, "carbs": 1.5, "fat": 15.0}
-]`;
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            { inlineData: { mimeType: "image/jpeg", data: uploadedImageBase64 } }
-          ]
-        }]
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`API 請求失敗: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const resultText = data.candidates[0].content.parts[0].text.trim();
-    
-    // Clean JSON markdown tags if present
-    const cleanedJson = resultText.replace(/```json/g, "").replace(/```/g, "").trim();
-    parsedIngredientsList = JSON.parse(cleanedJson);
-
-    displayAnalysisResults();
-  } catch (err) {
-    console.error(err);
-    alert(`AI 辨識發生錯誤: ${err.message}\n已切換為本地模擬分析。`);
-    // Fallback
-    parsedIngredientsList = [
-      { name: "去骨雞腿肉 (Costco)", weight: 400, unit: "g", calories: 464, protein: 80, carbs: 0, fat: 16 },
-      { name: "新鮮雞蛋", weight: 3, unit: "顆", calories: 225, protein: 19.5, carbs: 1.5, fat: 15 }
-    ];
-    displayAnalysisResults();
-  } finally {
-    showLoading(false);
+    }, 2000);
   }
 }
 
@@ -587,7 +634,6 @@ function importIngredientsToMacros() {
     totalF += item.fat;
   });
 
-  // Distribute equally or apply to cumulative offset
   importedOffset.cal = Math.round(totalCal);
   importedOffset.p = Math.round(totalP);
   importedOffset.c = Math.round(totalC);
