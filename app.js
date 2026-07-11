@@ -178,6 +178,8 @@ const totalAnalC = document.getElementById('total-anal-c');
 const totalAnalF = document.getElementById('total-anal-f');
 const importIngredientsBtn = document.getElementById('import-ingredients-btn');
 const aiTargetWho = document.getElementById('ai-target-who');
+const aiMealCategory = document.getElementById('ai-meal-category');
+const aiLogDate = document.getElementById('ai-log-date');
 const imageOverlayContainer = document.getElementById('image-overlay-container');
 
 // Navigation Tabs
@@ -242,6 +244,7 @@ function setDefaultDates() {
   logFemaleDate.value = today;
   foodLogDate.value = today;
   workoutLogDate.value = today;
+  aiLogDate.value = today;
 }
 
 // Setup Event Listeners
@@ -1028,8 +1031,8 @@ function importIngredientsToLogs() {
   if (parsedIngredientsList.length === 0) return;
 
   const targetWho = aiTargetWho.value;
-  const targetMeal = foodLogMeal.value;
-  const dateStr = foodLogDate.value || new Date().toISOString().split('T')[0];
+  const targetMeal = aiMealCategory.value;
+  const dateStr = aiLogDate.value || new Date().toISOString().split('T')[0];
 
   // Combine items to import as a single aggregate entry
   let totalP = 0, totalCal = 0;

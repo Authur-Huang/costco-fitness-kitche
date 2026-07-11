@@ -173,14 +173,29 @@
             <div class="ai-grid">
               <!-- Left: Inputs -->
               <div class="ai-inputs-panel">
-                <!-- Target Selection for AI Analysis -->
-                <div class="form-group" style="margin-bottom: 1rem;">
-                  <label for="ai-target-who">👥 此食材/照片分配給：</label>
-                  <select id="ai-target-who" style="background: rgba(15, 23, 42, 0.8); border-color: var(--border-color);">
-                    <option value="both">👫 雙人共餐 (熱量/蛋白質均分)</option>
-                    <option value="male">🙋‍♂️ 男生專屬</option>
-                    <option value="female">🙋‍♀️ 女生專屬</option>
-                  </select>
+                <!-- Target Selection and Meal settings for AI Analysis -->
+                <div class="ai-settings-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                  <div class="form-group">
+                    <label for="ai-target-who">👥 分配對象</label>
+                    <select id="ai-target-who" style="background: rgba(15, 23, 42, 0.8); border-color: var(--border-color); width: 100%;">
+                      <option value="both">👫 雙人共餐 (熱量/蛋白質均分)</option>
+                      <option value="male">🙋‍♂️ 男生專屬</option>
+                      <option value="female">🙋‍♀️ 女生專屬</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="ai-meal-category">🍽️ 匯入餐別</label>
+                    <select id="ai-meal-category" style="background: rgba(15, 23, 42, 0.8); border-color: var(--border-color); width: 100%;">
+                      <option value="早餐">早餐</option>
+                      <option value="午餐" selected>午餐</option>
+                      <option value="晚餐">晚餐</option>
+                      <option value="點心">點心</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                  <label for="ai-log-date">📅 匯入日期</label>
+                  <input type="date" id="ai-log-date" style="background: rgba(15, 23, 42, 0.8); border-color: var(--border-color); color: var(--text-main); width: 100%;">
                 </div>
 
                 <!-- Tabs for Photo vs Text -->
