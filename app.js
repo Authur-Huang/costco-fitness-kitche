@@ -197,18 +197,8 @@ const invItemUnit = document.getElementById('inv-item-unit');
 const importToInventoryBtn = document.getElementById('import-to-inventory-btn');
 
 // Log Form elements
-const logMaleDate = document.getElementById('log-male-date');
-const logFemaleDate = document.getElementById('log-female-date');
 const workoutLogDate = document.getElementById('workout-log-date');
-
-const maleWeightLogForm = document.getElementById('male-weight-log-form');
-const femaleWeightLogForm = document.getElementById('female-weight-log-form');
 const workoutLogForm = document.getElementById('workout-log-form');
-
-const logMaleW = document.getElementById('log-male-w');
-const logMaleF = document.getElementById('log-male-f');
-const logFemaleW = document.getElementById('log-female-w');
-const logFemaleF = document.getElementById('log-female-f');
 
 const workoutLogWho = document.getElementById('workout-log-who');
 const workoutLogType = document.getElementById('workout-log-type');
@@ -265,8 +255,6 @@ function init() {
 // Set default dates to today
 function setDefaultDates() {
   const today = new Date().toISOString().split('T')[0];
-  logMaleDate.value = today;
-  logFemaleDate.value = today;
   workoutLogDate.value = today;
   aiLogDate.value = today;
   if (chartMaleDate) chartMaleDate.value = today;
@@ -391,71 +379,7 @@ function setupNavigation() {
 
 // Setup Log Form Submissions
 function setupLogFormListeners() {
-  // Male Weight submission
-  maleWeightLogForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const date = logMaleDate.value;
-    const maleW = parseFloat(logMaleW.value);
-    const maleF = parseFloat(logMaleF.value);
 
-    if (maleW) {
-      const existing = fitnessDB.maleWeightHistory.find(h => h.date === date);
-      if (existing) {
-        existing.weight = maleW;
-        if (maleF) existing.fat = maleF;
-      } else {
-        fitnessDB.maleWeightHistory.push({ date, weight: maleW, fat: maleF || null });
-      }
-      maleWeightInput.value = maleW; // Update sidebar
-      if (maleF) maleTargetFatInput.value = maleF;
-    }
-
-    fitnessDB.maleWeightHistory.sort((a,b) => a.date.localeCompare(b.date));
-
-    // Reset inputs
-    logMaleW.value = '';
-    logMaleF.value = '';
-
-    calculateTargets();
-    updateRecipes();
-    saveToLocalStorage();
-    saveSharedData();
-    renderHistoryTable();
-    alert('已成功儲存男生體重體脂資料！');
-  });
-
-  // Female Weight submission
-  femaleWeightLogForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const date = logFemaleDate.value;
-    const femaleW = parseFloat(logFemaleW.value);
-    const femaleF = parseFloat(logFemaleF.value);
-
-    if (femaleW) {
-      const existing = fitnessDB.femaleWeightHistory.find(h => h.date === date);
-      if (existing) {
-        existing.weight = femaleW;
-        if (femaleF) existing.fat = femaleF;
-      } else {
-        fitnessDB.femaleWeightHistory.push({ date, weight: femaleW, fat: femaleF || null });
-      }
-      femaleWeightInput.value = femaleW; // Update sidebar
-      if (femaleF) femaleTargetWeightInput.value = femaleW;
-    }
-
-    fitnessDB.femaleWeightHistory.sort((a,b) => a.date.localeCompare(b.date));
-
-    // Reset inputs
-    logFemaleW.value = '';
-    logFemaleF.value = '';
-
-    calculateTargets();
-    updateRecipes();
-    saveToLocalStorage();
-    saveSharedData();
-    renderHistoryTable();
-    alert('已成功儲存女生體重體脂資料！');
-  });
 
   // Workout log submission
   workoutLogForm.addEventListener('submit', (e) => {
@@ -549,11 +473,6 @@ function setupLogFormListeners() {
       maleWeightInput.value = maleW;
       if (!isNaN(maleF)) maleTargetFatInput.value = maleF;
 
-      // Sync the other weight form input
-      logMaleW.value = maleW;
-      if (!isNaN(maleF)) logMaleF.value = maleF;
-      logMaleDate.value = date;
-
       calculateTargets();
       saveSharedData();
       renderHistoryTable();
@@ -585,11 +504,6 @@ function setupLogFormListeners() {
       femaleWeightInput.value = femaleW;
       if (!isNaN(femaleF)) femaleTargetWeightInput.value = femaleW;
 
-      // Sync the other weight form input
-      logFemaleW.value = femaleW;
-      if (!isNaN(femaleF)) logFemaleF.value = femaleF;
-      logFemaleDate.value = date;
-
       calculateTargets();
       saveSharedData();
       renderHistoryTable();
@@ -610,8 +524,8 @@ function setupWorkoutListeners() {
     });
     
     // Listen to weight changes to update MET calculation
-    if (logMaleW) logMaleW.addEventListener('input', calculateBurnedCalories);
-    if (logFemaleW) logFemaleW.addEventListener('input', calculateBurnedCalories);
+    maleWeightInput.addEventListener('input', calculateBurnedCalories);
+    femaleWeightInput.addEventListener('input', calculateBurnedCalories);
 
     // Initial calculation
     calculateBurnedCalories();
@@ -626,15 +540,15 @@ function calculateBurnedCalories() {
   const duration = parseFloat(workoutLogDuration.value) || 0;
   const load = parseFloat(workoutLogLoad.value) || 0;
   
-  // Default weights from inputs or fallbacks
+  // Default weights from profile inputs or fallbacks
   let weight = 70;
   if (who === 'male') {
-    weight = parseFloat(logMaleW.value) || 85;
+    weight = parseFloat(maleWeightInput.value) || 85;
   } else if (who === 'female') {
-    weight = parseFloat(logFemaleW.value) || 67;
+    weight = parseFloat(femaleWeightInput.value) || 67;
   } else if (who === 'both') {
-    const mw = parseFloat(logMaleW.value) || 85;
-    const fw = parseFloat(logFemaleW.value) || 67;
+    const mw = parseFloat(maleWeightInput.value) || 85;
+    const fw = parseFloat(femaleWeightInput.value) || 67;
     weight = (mw + fw) / 2;
   }
   
