@@ -1361,9 +1361,31 @@ function renderInventoryList() {
     itemDiv.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
         <strong style="color:var(--text-main); font-size:0.9rem;">${item.name}</strong>
-        <div style="display:flex; align-items:center; gap:0.4rem;">
+        <div style="display:flex; align-items:center; gap:0.35rem; flex-wrap:wrap; justify-content:flex-end;">
           <input type="number" class="inline-edit-input" style="width:65px; padding:0.1rem 0.25rem; text-align:center; font-weight:bold; font-size:0.8rem; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:var(--text-main); border-radius:4px;" value="${Math.round(item.remaining * 10) / 10}" onchange="updateInventoryItem(${index}, parseFloat(this.value) || 0)">
-          <span style="font-size:0.75rem; color:var(--text-muted);">${item.unit} / 總 ${item.total}${item.unit}</span>
+          
+          <select style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:var(--text-main); font-size:0.75rem; border-radius:4px; padding:0.1rem 0.25rem; font-weight:500;" onchange="updateInventoryItemUnit(${index}, this.value)">
+            <option value="g" ${item.unit === 'g' ? 'selected' : ''}>g</option>
+            <option value="kg" ${item.unit === 'kg' ? 'selected' : ''}>kg</option>
+            <option value="ml" ${item.unit === 'ml' ? 'selected' : ''}>ml</option>
+            <option value="顆" ${item.unit === '顆' ? 'selected' : ''}>顆</option>
+            <option value="粒" ${item.unit === '粒' ? 'selected' : ''}>粒</option>
+            <option value="包" ${item.unit === '包' ? 'selected' : ''}>包</option>
+            <option value="袋" ${item.unit === '袋' ? 'selected' : ''}>袋</option>
+            <option value="盒" ${item.unit === '盒' ? 'selected' : ''}>盒</option>
+            <option value="罐" ${item.unit === '罐' ? 'selected' : ''}>罐</option>
+            <option value="瓶" ${item.unit === '瓶' ? 'selected' : ''}>瓶</option>
+            <option value="根" ${item.unit === '根' ? 'selected' : ''}>根</option>
+            <option value="支" ${item.unit === '支' ? 'selected' : ''}>支</option>
+            <option value="把" ${item.unit === '把' ? 'selected' : ''}>把</option>
+            <option value="片" ${item.unit === '片' ? 'selected' : ''}>片</option>
+          </select>
+          
+          <span style="font-size:0.75rem; color:var(--text-muted);">/ 總</span>
+          
+          <input type="number" class="inline-edit-input" style="width:65px; padding:0.1rem 0.25rem; text-align:center; font-weight:bold; font-size:0.8rem; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:var(--text-main); border-radius:4px;" value="${Math.round(item.total * 10) / 10}" onchange="updateInventoryItemTotal(${index}, parseFloat(this.value) || 0)">
+          <span style="font-size:0.75rem; color:var(--text-muted);">${item.unit}</span>
+          
           <button class="remove-btn" style="position:static; padding:0.15rem 0.35rem; font-size:0.7rem; border-radius:4px; cursor:pointer;" onclick="deleteInventoryItem(${index})">🗑️</button>
         </div>
       </div>
@@ -1378,6 +1400,24 @@ function renderInventoryList() {
 window.updateInventoryItem = function(index, val) {
   if (fitnessDB.costcoInventory && fitnessDB.costcoInventory[index]) {
     fitnessDB.costcoInventory[index].remaining = Math.max(0, Math.min(val, fitnessDB.costcoInventory[index].total));
+    saveSharedData();
+    renderInventoryList();
+    updateRecipes();
+  }
+};
+
+window.updateInventoryItemUnit = function(index, unit) {
+  if (fitnessDB.costcoInventory && fitnessDB.costcoInventory[index]) {
+    fitnessDB.costcoInventory[index].unit = unit;
+    saveSharedData();
+    renderInventoryList();
+    updateRecipes();
+  }
+};
+
+window.updateInventoryItemTotal = function(index, total) {
+  if (fitnessDB.costcoInventory && fitnessDB.costcoInventory[index]) {
+    fitnessDB.costcoInventory[index].total = Math.max(0.1, total);
     saveSharedData();
     renderInventoryList();
     updateRecipes();
