@@ -807,6 +807,27 @@ textarea#text-input:focus {
   transform: translateY(-1px);
 }
 
+/* Inline Edit Inputs for AI Results Table */
+.inline-edit-input {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: var(--text-main);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  padding: 0.2rem 0.4rem;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.inline-edit-input:focus {
+  border-color: #38bdf8;
+  background: rgba(15, 23, 42, 0.8);
+  box-shadow: 0 0 5px rgba(56, 189, 248, 0.2);
+}
+
 /* Results Panel */
 .ai-results-panel {
   background: rgba(15, 23, 42, 0.4);

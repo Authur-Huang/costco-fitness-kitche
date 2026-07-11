@@ -876,23 +876,55 @@ function showLoading(show, text = "") {
   }
 }
 
-// Display results in the table
+// Display results in the table with editable inputs
 function displayAnalysisResults() {
   analysisTableBody.innerHTML = '';
-  let totalCal = 0, totalP = 0, totalC = 0, totalF = 0;
+  
+  if (parsedIngredientsList.length === 0) {
+    resultsContainer.style.display = 'none';
+    resultPlaceholder.style.display = 'block';
+    return;
+  }
 
-  parsedIngredientsList.forEach(item => {
+  parsedIngredientsList.forEach((item, index) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><strong>${item.name}</strong></td>
-      <td>${item.weight} ${item.unit}</td>
-      <td>${item.calories} kcal</td>
-      <td>${item.protein}g</td>
-      <td>${item.carbs}g</td>
-      <td>${item.fat}g</td>
+      <td><input type="text" class="inline-edit-input" value="${item.name}" onchange="updateAiIngredient(${index}, 'name', this.value)"></td>
+      <td>
+        <div style="display:flex; gap:0.25rem; align-items:center;">
+          <input type="number" class="inline-edit-input" style="width:60px;" value="${item.weight}" onchange="updateAiIngredient(${index}, 'weight', parseFloat(this.value) || 0)">
+          <span style="font-size:0.75rem; color:var(--text-muted);">${item.unit || 'g'}</span>
+        </div>
+      </td>
+      <td><input type="number" class="inline-edit-input" style="width:60px;" value="${item.calories}" onchange="updateAiIngredient(${index}, 'calories', parseFloat(this.value) || 0)"></td>
+      <td><input type="number" class="inline-edit-input" style="width:50px;" value="${item.protein}" onchange="updateAiIngredient(${index}, 'protein', parseFloat(this.value) || 0)"></td>
+      <td><input type="number" class="inline-edit-input" style="width:50px;" value="${item.carbs}" onchange="updateAiIngredient(${index}, 'carbs', parseFloat(this.value) || 0)"></td>
+      <td><input type="number" class="inline-edit-input" style="width:50px;" value="${item.fat}" onchange="updateAiIngredient(${index}, 'fat', parseFloat(this.value) || 0)"></td>
+      <td><button class="remove-btn" style="position:static; padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="deleteAiIngredient(${index})">🗑️ 刪除</button></td>
     `;
     analysisTableBody.appendChild(tr);
+  });
 
+  calculateAiTotals();
+  resultPlaceholder.style.display = 'none';
+  resultsContainer.style.display = 'block';
+}
+
+window.updateAiIngredient = function(index, field, value) {
+  if (parsedIngredientsList[index]) {
+    parsedIngredientsList[index][field] = value;
+    calculateAiTotals();
+  }
+};
+
+window.deleteAiIngredient = function(index) {
+  parsedIngredientsList.splice(index, 1);
+  displayAnalysisResults();
+};
+
+function calculateAiTotals() {
+  let totalCal = 0, totalP = 0, totalC = 0, totalF = 0;
+  parsedIngredientsList.forEach(item => {
     totalCal += item.calories;
     totalP += item.protein;
     totalC += item.carbs;
@@ -903,9 +935,6 @@ function displayAnalysisResults() {
   totalAnalP.textContent = Math.round(totalP * 10) / 10;
   totalAnalC.textContent = Math.round(totalC * 10) / 10;
   totalAnalF.textContent = Math.round(totalF * 10) / 10;
-
-  resultPlaceholder.style.display = 'none';
-  resultsContainer.style.display = 'block';
 }
 
 // Import parsed items as a shared food log entry (1-click import using form selections)
