@@ -69,26 +69,26 @@ const nutritionDB = {
   "鯛魚": { cal: 110, p: 20, c: 0, f: 2, unit: "g" },
   "蝦仁": { cal: 85, p: 20, c: 0, f: 1, unit: "g" },
   "蝦": { cal: 85, p: 20, c: 0, f: 1, unit: "g" },
-  "豆腐": { cal: 80, p: 8, c: 2, f: 4.5, unit: "g" },
-  "板豆腐": { cal: 80, p: 8, c: 2, f: 4.5, unit: "g" },
+  "豆腐": { cal: 80, p: 8, c: 2, f: 4.5, fiber: 0.8, unit: "g" },
+  "板豆腐": { cal: 80, p: 8, c: 2, f: 4.5, fiber: 0.8, unit: "g" },
   "雞蛋": { cal: 75, p: 6.5, c: 0.5, f: 5, unit: "顆" },
   "蛋": { cal: 75, p: 6.5, c: 0.5, f: 5, unit: "顆" },
-  "毛豆": { cal: 120, p: 11, c: 10, f: 5, unit: "g" },
-  "毛豆仁": { cal: 120, p: 11, c: 10, f: 5, unit: "g" },
-  "杏鮑菇": { cal: 35, p: 2.5, c: 6, f: 0.2, unit: "g" },
-  "花椰菜": { cal: 34, p: 3, c: 7, f: 0.3, unit: "g" },
-  "紅蘿蔔": { cal: 41, p: 1, c: 10, f: 0.2, unit: "g" },
-  "洋蔥": { cal: 40, p: 1.1, c: 9.3, f: 0.1, unit: "g" },
-  "高麗菜": { cal: 25, p: 1.3, c: 6, f: 0.1, unit: "g" },
-  "生菜": { cal: 15, p: 1, c: 3, f: 0.1, unit: "g" },
-  "沙拉": { cal: 15, p: 1, c: 3, f: 0.1, unit: "g" },
-  "地瓜": { cal: 86, p: 1.6, c: 20, f: 0.1, unit: "g" },
-  "番薯": { cal: 86, p: 1.6, c: 20, f: 0.1, unit: "g" },
-  "白飯": { cal: 130, p: 2.7, c: 28, f: 0.3, unit: "g" },
-  "米飯": { cal: 130, p: 2.7, c: 28, f: 0.3, unit: "g" },
-  "飯": { cal: 130, p: 2.7, c: 28, f: 0.3, unit: "g" },
-  "麥片": { cal: 380, p: 13, c: 67, f: 7, unit: "g" },
-  "燕麥片": { cal: 380, p: 13, c: 67, f: 7, unit: "g" },
+  "毛豆": { cal: 120, p: 11, c: 10, f: 5, fiber: 5, unit: "g" },
+  "毛豆仁": { cal: 120, p: 11, c: 10, f: 5, fiber: 5, unit: "g" },
+  "杏鮑菇": { cal: 35, p: 2.5, c: 6, f: 0.2, fiber: 2.3, unit: "g" },
+  "花椰菜": { cal: 34, p: 3, c: 7, f: 0.3, fiber: 2.6, unit: "g" },
+  "紅蘿蔔": { cal: 41, p: 1, c: 10, f: 0.2, fiber: 2.8, unit: "g" },
+  "洋蔥": { cal: 40, p: 1.1, c: 9.3, f: 0.1, fiber: 1.7, unit: "g" },
+  "高麗菜": { cal: 25, p: 1.3, c: 6, f: 0.1, fiber: 2.5, unit: "g" },
+  "生菜": { cal: 15, p: 1, c: 3, f: 0.1, fiber: 1.3, unit: "g" },
+  "沙拉": { cal: 15, p: 1, c: 3, f: 0.1, fiber: 1.3, unit: "g" },
+  "地瓜": { cal: 86, p: 1.6, c: 20, f: 0.1, fiber: 3, unit: "g" },
+  "番薯": { cal: 86, p: 1.6, c: 20, f: 0.1, fiber: 3, unit: "g" },
+  "白飯": { cal: 130, p: 2.7, c: 28, f: 0.3, fiber: 0.4, unit: "g" },
+  "米飯": { cal: 130, p: 2.7, c: 28, f: 0.3, fiber: 0.4, unit: "g" },
+  "飯": { cal: 130, p: 2.7, c: 28, f: 0.3, fiber: 0.4, unit: "g" },
+  "麥片": { cal: 380, p: 13, c: 67, f: 7, fiber: 10, unit: "g" },
+  "燕麥片": { cal: 380, p: 13, c: 67, f: 7, fiber: 10, unit: "g" },
   "牛奶": { cal: 60, p: 3.2, c: 4.8, f: 3.2, unit: "ml" },
   "鮮乳": { cal: 60, p: 3.2, c: 4.8, f: 3.2, unit: "ml" },
   "希臘優格": { cal: 60, p: 9, c: 3.5, f: 1, unit: "g" },
@@ -693,12 +693,14 @@ function renderHistoryTable() {
         <th>食物名稱</th>
         <th>熱量 (kcal)</th>
         <th>蛋白質 (g)</th>
+        <th>碳水 (g)</th>
+        <th>脂肪 (g)</th>
         <th>操作</th>
       </tr>
     `;
-    
+
     if (fitnessDB.foodLogs.length === 0) {
-      body.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">尚無飲食記錄。</td></tr>';
+      body.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">尚無飲食記錄。</td></tr>';
       return;
     }
 
@@ -712,6 +714,8 @@ function renderHistoryTable() {
         <td><strong>${escapeHTML(item.name)}</strong></td>
         <td>${item.cal} kcal</td>
         <td>${item.p}g</td>
+        <td>${item.c != null ? item.c + 'g' : '-'}</td>
+        <td>${item.f != null ? item.f + 'g' : '-'}</td>
         <td><button class="remove-btn" style="position:static; padding:0.2rem 0.5rem;" onclick="deleteLogItem('food', ${index})">🗑️ 刪除</button></td>
       `;
       body.appendChild(tr);
@@ -840,141 +844,172 @@ function handleImageFile(file) {
   reader.readAsDataURL(file);
 }
 
-// Calculate calorie goals and sum today's food logs
-function calculateTargets() {
-  // Male (Mifflin-St Jeor)
-  const mWeight = parseFloat(maleWeightInput.value) || 85;
-  const mHeight = parseFloat(maleHeightInput.value) || 180;
-  const mAge = parseFloat(maleAgeInput.value) || 30;
-  const mBMR = 10 * mWeight + 6.25 * mHeight - 5 * mAge + 5;
-  const mTDEE = mBMR * 1.35; 
-  const mTargetCal = Math.round(mTDEE - 600); 
-  const mTargetProt = Math.round(mWeight * 2.0); 
+const round1 = v => Math.round(v * 10) / 10;
 
-  maleTargetCalEl.textContent = mTargetCal.toLocaleString();
-  maleTargetProtEl.textContent = mTargetProt;
-
-  // Female (Mifflin-St Jeor)
-  const fWeight = parseFloat(femaleWeightInput.value) || 67;
-  const fHeight = parseFloat(femaleHeightInput.value) || 170;
-  const fAge = parseFloat(femaleAgeInput.value) || 30;
-  const fBMR = 10 * fWeight + 6.25 * fHeight - 5 * fAge - 161;
-  const fTDEE = fBMR * 1.35; 
-  const fTargetCal = Math.round(fTDEE - 400); 
-  const fTargetProt = Math.round(fWeight * 1.8);
-
-  femaleTargetCalEl.textContent = fTargetCal.toLocaleString();
-  femaleTargetProtEl.textContent = fTargetProt;
-
-  updateTodayProgress(mTargetCal, mTargetProt, fTargetCal, fTargetProt);
+// Daily nutrition targets per person (single source of truth for all tabs).
+// Evidence-based cut-phase guidelines: protein 1.8~2.0 g/kg, fat ~0.8 g/kg,
+// carbs = remaining calories, fiber 30g (M) / 25g (F), sodium < 2300 mg.
+function getNutritionTargets(who) {
+  if (who === 'male') {
+    const w = parseFloat(maleWeightInput.value) || 85;
+    const h = parseFloat(maleHeightInput.value) || 180;
+    const age = parseFloat(maleAgeInput.value) || 30;
+    const bmr = 10 * w + 6.25 * h - 5 * age + 5;
+    const cal = Math.round(bmr * 1.35 - 600);
+    const p = Math.round(w * 2.0);
+    const f = Math.round(w * 0.8);
+    const c = Math.max(0, Math.round((cal - p * 4 - f * 9) / 4));
+    return { cal, p, c, f, fiber: 30, sodium: 2300, bmr: Math.round(bmr) };
+  }
+  const w = parseFloat(femaleWeightInput.value) || 67;
+  const h = parseFloat(femaleHeightInput.value) || 170;
+  const age = parseFloat(femaleAgeInput.value) || 30;
+  const bmr = 10 * w + 6.25 * h - 5 * age - 161;
+  const cal = Math.round(bmr * 1.35 - 400);
+  const p = Math.round(w * 1.8);
+  const f = Math.round(w * 0.8);
+  const c = Math.max(0, Math.round((cal - p * 4 - f * 9) / 4));
+  return { cal, p, c, f, fiber: 25, sodium: 2300, bmr: Math.round(bmr) };
 }
 
-// Sum today's logged meals and update progress bars
-function updateTodayProgress(mCalGoal, mPGoal, fCalGoal, fPGoal) {
+// Sum today's logged nutrition & workout burn per person ('both' is split 50/50)
+function computeTodayTotals() {
   const todayStr = new Date().toISOString().split('T')[0];
-  
-  let mCalAct = 0, mPAct = 0;
-  let fCalAct = 0, fPAct = 0;
+  const blank = () => ({ cal: 0, p: 0, c: 0, f: 0, fiber: 0, sodium: 0, burned: 0 });
+  const male = blank(), female = blank();
+
+  const add = (t, log, ratio) => {
+    t.cal += (log.cal || 0) * ratio;
+    t.p += (log.p || 0) * ratio;
+    t.c += (log.c || 0) * ratio;
+    t.f += (log.f || 0) * ratio;
+    t.fiber += (log.fiber || 0) * ratio;
+    t.sodium += (log.sodium || 0) * ratio;
+  };
 
   fitnessDB.foodLogs.forEach(log => {
-    if (log.date === todayStr) {
-      if (log.who === 'male') {
-        mCalAct += log.cal;
-        mPAct += log.p;
-      } else if (log.who === 'female') {
-        fCalAct += log.cal;
-        fPAct += log.p;
-      } else if (log.who === 'both') {
-        mCalAct += Math.round(log.cal / 2);
-        mPAct += Math.round((log.p / 2) * 10) / 10;
-        fCalAct += Math.round(log.cal / 2);
-        fPAct += Math.round((log.p / 2) * 10) / 10;
-      }
-    }
+    if (log.date !== todayStr) return;
+    if (log.who === 'male') add(male, log, 1);
+    else if (log.who === 'female') add(female, log, 1);
+    else if (log.who === 'both') { add(male, log, 0.5); add(female, log, 0.5); }
   });
 
-  // Sum today's exercise calories burned
-  let mCalBurned = 0;
-  let fCalBurned = 0;
   fitnessDB.workoutLogs.forEach(log => {
-    if (log.date === todayStr) {
-      const cal = log.burnedCal || 0;
-      if (log.who === 'male') {
-        mCalBurned += cal;
-      } else if (log.who === 'female') {
-        fCalBurned += cal;
-      } else if (log.who === 'both') {
-        mCalBurned += Math.round(cal / 2);
-        fCalBurned += Math.round(cal / 2);
-      }
-    }
+    if (log.date !== todayStr) return;
+    const cal = log.burnedCal || 0;
+    if (log.who === 'male') male.burned += cal;
+    else if (log.who === 'female') female.burned += cal;
+    else if (log.who === 'both') { male.burned += Math.round(cal / 2); female.burned += Math.round(cal / 2); }
   });
 
-  const mCAct = Math.round((mCalAct * 0.4) / 4);
-  const fCAct = Math.round((fCalAct * 0.4) / 4);
-  const mCGoal = 150;
-  const fCGoal = 130;
+  [male, female].forEach(t => {
+    t.cal = Math.round(t.cal);
+    t.p = round1(t.p); t.c = round1(t.c); t.f = round1(t.f);
+    t.fiber = round1(t.fiber); t.sodium = Math.round(t.sodium);
+  });
+  return { male, female };
+}
 
-  maleCalRatio.innerHTML = `已攝取 ${mCalAct} / 目標 ${mCalGoal} kcal <span style="color: #38bdf8; font-size: 0.8rem; margin-left: 0.5rem; font-weight: normal;">🔥 已燃燒 ${mCalBurned} kcal</span>`;
-  maleCalFill.style.width = `${Math.min((mCalAct / mCalGoal) * 100, 100)}%`;
-  malePRatio.textContent = `${mPAct} / ${mPGoal}g`;
-  malePFill.style.width = `${Math.min((mPAct / mPGoal) * 100, 100)}%`;
-  maleCRatio.textContent = `${mCAct} / ${mCGoal}g`;
-  maleCFill.style.width = `${Math.min((mCAct / mCGoal) * 100, 100)}%`;
+// Calculate calorie goals and refresh every tab that displays today's intake
+function calculateTargets() {
+  const mT = getNutritionTargets('male');
+  const fT = getNutritionTargets('female');
 
-  femaleCalRatio.innerHTML = `已攝取 ${fCalAct} / 目標 ${fCalGoal} kcal <span style="color: #10b981; font-size: 0.8rem; margin-left: 0.5rem; font-weight: normal;">🔥 已燃燒 ${fCalBurned} kcal</span>`;
-  femaleCalFill.style.width = `${Math.min((fCalAct / fCalGoal) * 100, 100)}%`;
-  femalePRatio.textContent = `${fPAct} / ${fPGoal}g`;
-  femalePFill.style.width = `${Math.min((fPAct / fPGoal) * 100, 100)}%`;
-  femaleCRatio.textContent = `${fCAct} / ${fCGoal}g`;
-  femaleCFill.style.width = `${Math.min((fCAct / fCGoal) * 100, 100)}%`;
+  maleTargetCalEl.textContent = mT.cal.toLocaleString();
+  maleTargetProtEl.textContent = mT.p;
+  femaleTargetCalEl.textContent = fT.cal.toLocaleString();
+  femaleTargetProtEl.textContent = fT.p;
 
-  // Update Deficit Dashboard elements
-  if (mEnergyIntake) {
-    const mWeight = parseFloat(maleWeightInput.value) || 85;
-    const mHeight = parseFloat(maleHeightInput.value) || 180;
-    const mAge = parseFloat(maleAgeInput.value) || 30;
-    const mBMR = Math.round(10 * mWeight + 6.25 * mHeight - 5 * mAge + 5);
+  updateTodayProgress(mT, fT);
+}
 
-    mEnergyIntake.textContent = mCalAct;
-    mEnergyWorkout.textContent = mCalBurned;
-    mEnergyBmr.textContent = mBMR;
+// Fill one progress bar pair (ratio label + fill width)
+function setBar(ratioId, fillId, val, goal, unit) {
+  const ratioEl = document.getElementById(ratioId);
+  const fillEl = document.getElementById(fillId);
+  if (!ratioEl || !fillEl) return;
+  ratioEl.textContent = `${val} / ${goal}${unit}`;
+  fillEl.style.width = `${goal > 0 ? Math.min((val / goal) * 100, 100) : 0}%`;
+}
 
-    const mNet = mCalAct - mCalBurned - mBMR;
-    mEnergyNetBadge.textContent = `${mNet > 0 ? '+' : ''}${mNet} kcal`;
-    if (mNet <= 0) {
-      mEnergyNetBadge.style.background = 'rgba(16, 185, 129, 0.15)';
-      mEnergyNetBadge.style.color = '#34d399';
-      mEnergyNetBadge.textContent += ' (✔️ 熱量赤字)';
-    } else {
-      mEnergyNetBadge.style.background = 'rgba(239, 68, 68, 0.15)';
-      mEnergyNetBadge.style.color = '#f87171';
-      mEnergyNetBadge.textContent += ' (⚠️ 熱量盈餘)';
-    }
+// Render the per-nutrient breakdown list in the daily balance dashboard
+function renderNutrientRows(containerId, totals, targets, accent) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  const rows = [
+    { icon: '🥩', label: '蛋白質', val: totals.p, goal: targets.p, unit: 'g' },
+    { icon: '🍚', label: '碳水化合物', val: totals.c, goal: targets.c, unit: 'g' },
+    { icon: '🥑', label: '脂肪', val: totals.f, goal: targets.f, unit: 'g' },
+    { icon: '🥬', label: '膳食纖維', val: totals.fiber, goal: targets.fiber, unit: 'g' },
+    { icon: '🧂', label: '鈉（每日上限）', val: totals.sodium, goal: targets.sodium, unit: 'mg', isLimit: true }
+  ];
+
+  el.innerHTML = rows.map(rw => {
+    const pct = rw.goal > 0 ? Math.min((rw.val / rw.goal) * 100, 100) : 0;
+    const over = rw.isLimit && rw.val > rw.goal;
+    const color = over ? '#f87171' : (rw.isLimit ? '#94a3b8' : accent);
+    const status = rw.isLimit
+      ? (over ? ' ⚠️' : '')
+      : (rw.val >= rw.goal ? ' ✔️' : '');
+    return `
+      <div class="nutrient-row">
+        <div class="nutrient-row-label">
+          <span>${rw.icon} ${rw.label}</span>
+          <span>${rw.val} / ${rw.goal} ${rw.unit}${status}</span>
+        </div>
+        <div class="nutrient-bar-bg"><div class="nutrient-bar-fill" style="width:${pct}%; background:${color};"></div></div>
+      </div>`;
+  }).join('');
+}
+
+// Update per-person energy balance card (intake / burn / BMR / net)
+function updateEnergyCard(prefix, totals, targets) {
+  const intakeEl = document.getElementById(`${prefix}-energy-intake`);
+  if (!intakeEl) return;
+  document.getElementById(`${prefix}-energy-workout`).textContent = totals.burned;
+  document.getElementById(`${prefix}-energy-bmr`).textContent = targets.bmr;
+  intakeEl.textContent = totals.cal;
+
+  const badge = document.getElementById(`${prefix}-energy-net-badge`);
+  const net = totals.cal - totals.burned - targets.bmr;
+  badge.textContent = `${net > 0 ? '+' : ''}${net} kcal`;
+  if (net <= 0) {
+    badge.style.background = 'rgba(16, 185, 129, 0.15)';
+    badge.style.color = '#34d399';
+    badge.textContent += ' (✔️ 熱量赤字)';
+  } else {
+    badge.style.background = 'rgba(239, 68, 68, 0.15)';
+    badge.style.color = '#f87171';
+    badge.textContent += ' (⚠️ 熱量盈餘)';
   }
+}
 
-  if (fEnergyIntake) {
-    const fWeight = parseFloat(femaleWeightInput.value) || 67;
-    const fHeight = parseFloat(femaleHeightInput.value) || 170;
-    const fAge = parseFloat(femaleAgeInput.value) || 30;
-    const fBMR = Math.round(10 * fWeight + 6.25 * fHeight - 5 * fAge - 161);
+// Sum today's logged meals and update every tab (kitchen bars + charts dashboard)
+function updateTodayProgress(mT, fT) {
+  const totals = computeTodayTotals();
+  const m = totals.male, f = totals.female;
 
-    fEnergyIntake.textContent = fCalAct;
-    fEnergyWorkout.textContent = fCalBurned;
-    fEnergyBmr.textContent = fBMR;
+  // --- Kitchen tab: intake progress bars (real logged values, shared targets) ---
+  maleCalRatio.innerHTML = `已攝取 ${m.cal} / 目標 ${mT.cal} kcal <span style="color: #38bdf8; font-size: 0.8rem; margin-left: 0.5rem; font-weight: normal;">🔥 已燃燒 ${m.burned} kcal</span>`;
+  maleCalFill.style.width = `${Math.min((m.cal / mT.cal) * 100, 100)}%`;
+  setBar('male-p-ratio', 'male-p-fill', m.p, mT.p, 'g');
+  setBar('male-c-ratio', 'male-c-fill', m.c, mT.c, 'g');
+  setBar('male-fat-ratio', 'male-fat-fill', m.f, mT.f, 'g');
+  setBar('male-fiber-ratio', 'male-fiber-fill', m.fiber, mT.fiber, 'g');
 
-    const fNet = fCalAct - fCalBurned - fBMR;
-    fEnergyNetBadge.textContent = `${fNet > 0 ? '+' : ''}${fNet} kcal`;
-    if (fNet <= 0) {
-      fEnergyNetBadge.style.background = 'rgba(16, 185, 129, 0.15)';
-      fEnergyNetBadge.style.color = '#34d399';
-      fEnergyNetBadge.textContent += ' (✔️ 熱量赤字)';
-    } else {
-      fEnergyNetBadge.style.background = 'rgba(239, 68, 68, 0.15)';
-      fEnergyNetBadge.style.color = '#f87171';
-      fEnergyNetBadge.textContent += ' (⚠️ 熱量盈餘)';
-    }
-  }
+  femaleCalRatio.innerHTML = `已攝取 ${f.cal} / 目標 ${fT.cal} kcal <span style="color: #10b981; font-size: 0.8rem; margin-left: 0.5rem; font-weight: normal;">🔥 已燃燒 ${f.burned} kcal</span>`;
+  femaleCalFill.style.width = `${Math.min((f.cal / fT.cal) * 100, 100)}%`;
+  setBar('female-p-ratio', 'female-p-fill', f.p, fT.p, 'g');
+  setBar('female-c-ratio', 'female-c-fill', f.c, fT.c, 'g');
+  setBar('female-fat-ratio', 'female-fat-fill', f.f, fT.f, 'g');
+  setBar('female-fiber-ratio', 'female-fiber-fill', f.fiber, fT.fiber, 'g');
+
+  // --- Charts tab: energy balance + nutrient breakdown (same data source) ---
+  updateEnergyCard('m', m, mT);
+  updateEnergyCard('f', f, fT);
+  renderNutrientRows('m-nutrient-rows', m, mT, '#38bdf8');
+  renderNutrientRows('f-nutrient-rows', f, fT, '#34d399');
 }
 
 // Unit conversion helper for Costco Inventory.
@@ -1209,19 +1244,23 @@ async function analyzeText() {
             weight: actualWeight,
             unit: matchedData.unit,
             calories: Math.round(matchedData.cal * factor),
-            protein: Math.round(matchedData.p * factor * 10) / 10,
-            carbs: Math.round(matchedData.c * factor * 10) / 10,
-            fat: Math.round(matchedData.f * factor * 10) / 10
+            protein: round1(matchedData.p * factor),
+            carbs: round1(matchedData.c * factor),
+            fat: round1(matchedData.f * factor),
+            fiber: round1((matchedData.fiber || 0) * factor),
+            sodium: 0
           });
         } else {
           parsedIngredientsList.push({
             name: line.replace(/[\d\s克g顆盒包mlcc匙]/g, "") || "未知食材",
             weight: qty,
             unit: unit,
-            calories: Math.round(qty * 0.8), 
-            protein: Math.round(qty * 0.05 * 10) / 10,
-            carbs: Math.round(qty * 0.1 * 10) / 10,
-            fat: Math.round(qty * 0.02 * 10) / 10
+            calories: Math.round(qty * 0.8),
+            protein: round1(qty * 0.05),
+            carbs: round1(qty * 0.1),
+            fat: round1(qty * 0.02),
+            fiber: 0,
+            sodium: 0
           });
         }
       });
@@ -1249,10 +1288,10 @@ async function analyzePhoto() {
     console.log("Photo analysis API failed, running mock simulation:", err);
     setTimeout(() => {
       parsedIngredientsList = [
-        { name: "去骨雞腿肉 (Costco)", weight: 400, unit: "g", calories: 464, protein: 80, carbs: 0, fat: 16, box_2d: [150, 100, 500, 600] },
-        { name: "義美板豆腐", weight: 300, unit: "g", calories: 240, protein: 24, carbs: 6, fat: 13.5, box_2d: [150, 550, 450, 830] },
-        { name: "新鮮雞蛋", weight: 3, unit: "顆", calories: 225, protein: 19.5, carbs: 1.5, fat: 15, box_2d: [480, 500, 900, 820] },
-        { name: "冷凍毛豆仁 (Costco)", weight: 150, unit: "g", calories: 180, protein: 16.5, carbs: 15, fat: 7.5, box_2d: [400, 100, 800, 450] }
+        { name: "去骨雞腿肉 (Costco)", weight: 400, unit: "g", calories: 464, protein: 80, carbs: 0, fat: 16, fiber: 0, sodium: 320, box_2d: [150, 100, 500, 600] },
+        { name: "義美板豆腐", weight: 300, unit: "g", calories: 240, protein: 24, carbs: 6, fat: 13.5, fiber: 2.4, sodium: 20, box_2d: [150, 550, 450, 830] },
+        { name: "新鮮雞蛋", weight: 3, unit: "顆", calories: 225, protein: 19.5, carbs: 1.5, fat: 15, fiber: 0, sodium: 210, box_2d: [480, 500, 900, 820] },
+        { name: "冷凍毛豆仁 (Costco)", weight: 150, unit: "g", calories: 180, protein: 16.5, carbs: 15, fat: 7.5, fiber: 7.5, sodium: 10, box_2d: [400, 100, 800, 450] }
       ];
       displayAnalysisResults();
       showLoading(false);
@@ -1300,6 +1339,8 @@ function displayAnalysisResults() {
       <td><input type="number" class="inline-edit-input" style="width:50px;" value="${item.protein}" onfocus="highlightIngredientBox(${index})" onblur="clearIngredientHighlight()" onchange="updateAiIngredient(${index}, 'protein', parseFloat(this.value) || 0)"></td>
       <td><input type="number" class="inline-edit-input" style="width:50px;" value="${item.carbs}" onfocus="highlightIngredientBox(${index})" onblur="clearIngredientHighlight()" onchange="updateAiIngredient(${index}, 'carbs', parseFloat(this.value) || 0)"></td>
       <td><input type="number" class="inline-edit-input" style="width:50px;" value="${item.fat}" onfocus="highlightIngredientBox(${index})" onblur="clearIngredientHighlight()" onchange="updateAiIngredient(${index}, 'fat', parseFloat(this.value) || 0)"></td>
+      <td><input type="number" class="inline-edit-input" style="width:50px;" value="${item.fiber || 0}" onfocus="highlightIngredientBox(${index})" onblur="clearIngredientHighlight()" onchange="updateAiIngredient(${index}, 'fiber', parseFloat(this.value) || 0)"></td>
+      <td><input type="number" class="inline-edit-input" style="width:55px;" value="${item.sodium || 0}" onfocus="highlightIngredientBox(${index})" onblur="clearIngredientHighlight()" onchange="updateAiIngredient(${index}, 'sodium', parseFloat(this.value) || 0)"></td>
       <td><button class="remove-btn" style="position:static; padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="deleteAiIngredient(${index})">🗑️ 刪除</button></td>
     `;
     analysisTableBody.appendChild(tr);
@@ -1360,9 +1401,10 @@ window.updateAiIngredient = function(index, field, value) {
         const multiplier = isGramOrMl ? (weight / 100) : weight;
 
         parsedIngredientsList[index].calories = Math.round(nut.cal * multiplier);
-        parsedIngredientsList[index].protein = Math.round(nut.p * multiplier * 10) / 10;
-        parsedIngredientsList[index].carbs = Math.round(nut.c * multiplier * 10) / 10;
-        parsedIngredientsList[index].fat = Math.round(nut.f * multiplier * 10) / 10;
+        parsedIngredientsList[index].protein = round1(nut.p * multiplier);
+        parsedIngredientsList[index].carbs = round1(nut.c * multiplier);
+        parsedIngredientsList[index].fat = round1(nut.f * multiplier);
+        parsedIngredientsList[index].fiber = round1((nut.fiber || 0) * multiplier);
         parsedIngredientsList[index].unit = nut.unit;
 
         // Re-render display to reflect automatically calculated values
@@ -1381,18 +1423,24 @@ window.deleteAiIngredient = function(index) {
 };
 
 function calculateAiTotals() {
-  let totalCal = 0, totalP = 0, totalC = 0, totalF = 0;
+  let totalCal = 0, totalP = 0, totalC = 0, totalF = 0, totalFiber = 0, totalSodium = 0;
   parsedIngredientsList.forEach(item => {
-    totalCal += item.calories;
-    totalP += item.protein;
-    totalC += item.carbs;
-    totalF += item.fat;
+    totalCal += item.calories || 0;
+    totalP += item.protein || 0;
+    totalC += item.carbs || 0;
+    totalF += item.fat || 0;
+    totalFiber += item.fiber || 0;
+    totalSodium += item.sodium || 0;
   });
 
   totalAnalCal.textContent = Math.round(totalCal);
-  totalAnalP.textContent = Math.round(totalP * 10) / 10;
-  totalAnalC.textContent = Math.round(totalC * 10) / 10;
-  totalAnalF.textContent = Math.round(totalF * 10) / 10;
+  totalAnalP.textContent = round1(totalP);
+  totalAnalC.textContent = round1(totalC);
+  totalAnalF.textContent = round1(totalF);
+  const fiberEl = document.getElementById('total-anal-fiber');
+  const sodiumEl = document.getElementById('total-anal-sodium');
+  if (fiberEl) fiberEl.textContent = round1(totalFiber);
+  if (sodiumEl) sodiumEl.textContent = Math.round(totalSodium);
 }
 
 // Import parsed items as a shared food log entry (1-click import using form selections)
@@ -1404,12 +1452,16 @@ function importIngredientsToLogs() {
   const dateStr = aiLogDate.value || new Date().toISOString().split('T')[0];
 
   // Combine items to import as a single aggregate entry
-  let totalP = 0, totalCal = 0;
+  let totalCal = 0, totalP = 0, totalC = 0, totalF = 0, totalFiber = 0, totalSodium = 0;
   let itemsStr = "";
 
   parsedIngredientsList.forEach(item => {
-    totalCal += item.calories;
-    totalP += item.protein;
+    totalCal += item.calories || 0;
+    totalP += item.protein || 0;
+    totalC += item.carbs || 0;
+    totalF += item.fat || 0;
+    totalFiber += item.fiber || 0;
+    totalSodium += item.sodium || 0;
     itemsStr += `${item.name}+`;
   });
   itemsStr = itemsStr.slice(0, -1); // remove trailing +
@@ -1420,7 +1472,11 @@ function importIngredientsToLogs() {
     meal: targetMeal,
     name: `AI匯入: ${itemsStr}`,
     cal: Math.round(totalCal),
-    p: Math.round(totalP * 10) / 10
+    p: round1(totalP),
+    c: round1(totalC),
+    f: round1(totalF),
+    fiber: round1(totalFiber),
+    sodium: Math.round(totalSodium)
   });
 
   fitnessDB.foodLogs.sort((a,b) => b.date.localeCompare(a.date));
@@ -1628,27 +1684,34 @@ window.cookRecipe = function(recipeKey) {
   if (confirm(`🍳 庫存已成功扣減！\n是否要將此料理「${recipe.name}」自動匯入今天的飲食日誌？`)) {
     const todayStr = new Date().toISOString().split('T')[0];
     
-    // Calculate total calories and protein of the meal for this mode
-    let totalCal = 0;
-    let totalP = 0;
+    // Calculate total macros of the meal for this mode
+    let totalCal = 0, totalP = 0, totalC = 0, totalF = 0;
     if (mode === 'both') {
       totalCal = recipe.macros.male.cal + recipe.macros.female.cal;
       totalP = recipe.macros.male.p + recipe.macros.female.p;
+      totalC = (recipe.macros.male.c || 0) + (recipe.macros.female.c || 0);
+      totalF = (recipe.macros.male.f || 0) + (recipe.macros.female.f || 0);
     } else if (mode === 'male') {
       totalCal = recipe.macros.male.cal;
       totalP = recipe.macros.male.p;
+      totalC = recipe.macros.male.c || 0;
+      totalF = recipe.macros.male.f || 0;
     } else if (mode === 'female') {
       totalCal = recipe.macros.female.cal;
       totalP = recipe.macros.female.p;
+      totalC = recipe.macros.female.c || 0;
+      totalF = recipe.macros.female.f || 0;
     }
-    
+
     fitnessDB.foodLogs.push({
       date: todayStr,
       who: mode,
       meal: "午餐", // default to lunch
       name: `烹飪: ${recipe.name}`,
       cal: totalCal,
-      p: totalP
+      p: totalP,
+      c: totalC,
+      f: totalF
     });
     fitnessDB.foodLogs.sort((a,b) => b.date.localeCompare(a.date));
     

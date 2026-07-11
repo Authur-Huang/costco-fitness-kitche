@@ -1241,6 +1241,55 @@ textarea#text-input:focus {
   border-radius: 4px;
   position: static;
   white-space: nowrap;
+  /* override .ai-action-btn width:100% which hogs the flex row and
+     squeezes the date/weight inputs into slivers */
+  width: auto;
+  flex: 0 0 auto;
+}
+
+/* Nutrient breakdown list (charts tab daily balance cards) */
+.nutrient-breakdown-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.nutrient-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.nutrient-row-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.nutrient-row-label span:last-child {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.nutrient-bar-bg {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.nutrient-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
 }
 
 /* ============================================================

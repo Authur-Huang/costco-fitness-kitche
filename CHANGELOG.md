@@ -5,6 +5,39 @@
 
 ---
 
+## 2026-07-12 · 第四輪：完整營養素追蹤與跨頁整合
+
+### 需求
+1. 每日看板除了熱量外，要追蹤蛋白質與其他必要營養素的攝取量（依網路權威指引列出必要項目）
+2. 整合各分頁，數據要有整體性（同一數字在每頁一致）
+
+### 營養素研究依據（減脂期指引）
+- **蛋白質**：阻力訓練者減脂期 2.0~2.4 g/kg（男 2.0、女 1.8 g/kg 落在建議範圍）
+- **脂肪**：熱量赤字期 0.5~0.8 g/kg → 採 0.8 g/kg
+- **碳水化合物**：蛋白質與脂肪扣除後的剩餘熱量 ÷ 4
+- **膳食纖維**：男 30 g / 女 25 g（另一算法為 14 g / 1000 kcal）
+- **鈉**：每日上限 2,300 mg（Dietary Guidelines for Americans / FDA）
+
+### 修正
+| 檔案 | 內容 |
+|------|------|
+| `app.js` | 新增 `getNutritionTargets()`（單一目標來源：cal/p/c/f/fiber/sodium/bmr）與 `computeTodayTotals()`（單一當日加總來源，'both' 均分）；重寫 `updateTodayProgress()` 同時驅動 Tab 1 進度條、Tab 4 收支卡與營養素明細；`foodLogs` 新增 `c/f/fiber/sodium` 欄位（AI 匯入與烹飪匯入都寫入完整營養）；AI 分析表新增纖維/鈉可編輯欄與總計；離線 `nutritionDB` 補 12 項食材纖維值；歷史飲食表新增碳水/脂肪欄 |
+| `index.html` | Tab 1 每人新增「脂肪、膳食纖維」進度條（碳水改為真實值+動態目標，原本是攝取熱量×40% 的假估算+寫死 150/130g）；Tab 4 收支卡新增「🥗 今日營養素攝取進度」明細（蛋白質/碳水/脂肪/纖維/鈉五列迷你進度條）；AI 分析表 +纖維/鈉欄；資源版本 v=5 |
+| `style.css` | 新增 `.nutrient-breakdown` 系列樣式；修正 `.quick-log-btn` 被 `.ai-action-btn { width:100% }` 撐爆 flex 列、把日期/體重輸入框擠成細條的桌面版 bug（`width:auto; flex:0 0 auto`） |
+| `api/analyze.js` | Gemini prompt 增加 fiber(g)/sodium(mg) 欄位要求（照片與文字兩種模式） |
+
+### 整體性設計
+所有「今日攝取 vs 目標」數字統一出自 `getNutritionTargets()` + `computeTodayTotals()` 兩個函數：Tab 1 進度條、Tab 4 收支卡與營養明細、側欄目標熱量顯示全部同源，任何一處修改個人資料即全站同步重算。
+
+### 驗證（本地 static server，桌面+375px 手機）
+- AI 匯入 → `foodLogs` 完整寫入 `{cal:468, p:71, c:10, f:17, fiber:5, sodium:246}`
+- Tab 1 進度條與 Tab 4 營養明細數字完全一致（71/170g、10/145g、17/68g、5/30g、246/2300mg）
+- 歷史飲食表新欄位正常渲染；舊紀錄缺欄位顯示 `-`
+- 快速登記輸入框恢復正常寬度（255/88/88px，按鈕 66px）
+- 手機五分頁零橫向溢出（docScrollWidth = 375）
+
+---
+
 ## 2026-07-11 · 第三輪：個人設定獨立分頁（commit `fea0307`）
 
 ### 問題

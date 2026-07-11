@@ -24,12 +24,12 @@ module.exports = async (req, res) => {
     if (type === 'photo') {
       prompt = `請分析這張照片中的食材（主要是 Costco 購買的健身增肌減脂食材，例如去骨雞腿肉、豬五花、毛豆、豆腐、雞蛋、蔬菜等）。
 請辨識出食材的名稱、估計克數（如果是雞蛋、盒裝豆腐等單位，可以用顆或盒，但盡量提供換算克數）。
-請估算出卡路里(calories), 蛋白質(protein), 碳水化合物(carbs)與脂肪(fat)含量。
+請估算出卡路里(calories), 蛋白質(protein, 克), 碳水化合物(carbs, 克), 脂肪(fat, 克), 膳食纖維(fiber, 克)與鈉含量(sodium, 毫克)。
 並且，請為每個食材提供它在照片中的二維邊界框（Bounding Box）定位坐標，以 [ymin, xmin, ymax, xmax] 格式表示（數值為 0 到 1000 之間的整數，代表相對於圖片高寬的千分比位置，例如圖片頂部為 0，底部為 1000，左邊為 0，右邊為 1000）。
 你必須只回覆一個 JSON 格式的陣列，且不要用 markdown (\`\`\`json) 標記。格式範例如下：
 [
-  {"name": "去骨雞腿肉", "weight": 400, "unit": "g", "calories": 464, "protein": 80.0, "carbs": 0.0, "fat": 16.0, "box_2d": [300, 150, 800, 600]},
-  {"name": "雞蛋", "weight": 3, "unit": "顆", "calories": 225, "protein": 19.5, "carbs": 1.5, "fat": 15.0, "box_2d": [480, 500, 900, 820]}
+  {"name": "去骨雞腿肉", "weight": 400, "unit": "g", "calories": 464, "protein": 80.0, "carbs": 0.0, "fat": 16.0, "fiber": 0.0, "sodium": 320, "box_2d": [300, 150, 800, 600]},
+  {"name": "雞蛋", "weight": 3, "unit": "顆", "calories": 225, "protein": 19.5, "carbs": 1.5, "fat": 15.0, "fiber": 0.0, "sodium": 210, "box_2d": [480, 500, 900, 820]}
 ]`;
       contents = [{
         parts: [
@@ -39,10 +39,10 @@ module.exports = async (req, res) => {
       }];
     } else {
       // Text mode
-      prompt = `請分析以下這段食材清單文字，提取出各個食材的名稱與估計重量（克數），並估算出其卡路里(calories)、蛋白質(protein)、碳水化合物(carbs)與脂肪(fat)含量。
+      prompt = `請分析以下這段食材清單文字，提取出各個食材的名稱與估計重量（克數），並估算出其卡路里(calories)、蛋白質(protein, 克)、碳水化合物(carbs, 克)、脂肪(fat, 克)、膳食纖維(fiber, 克)與鈉含量(sodium, 毫克)。
 你必須只回覆一個 JSON 格式的陣列，且不要用 markdown (\`\`\`json) 標記。格式範例如下：
 [
-  {"name": "去骨雞腿肉", "weight": 400, "unit": "g", "calories": 464, "protein": 80.0, "carbs": 0.0, "fat": 16.0}
+  {"name": "去骨雞腿肉", "weight": 400, "unit": "g", "calories": 464, "protein": 80.0, "carbs": 0.0, "fat": 16.0, "fiber": 0.0, "sodium": 320}
 ]
 食材清單文字：
 ${text}`;

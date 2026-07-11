@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Global Error Logger -->
@@ -68,8 +68,16 @@
                     <div class="bar-bg"><div class="bar-fill" id="male-p-fill" style="width: 100%;"></div></div>
                   </div>
                   <div class="progress-bar-wrapper">
-                    <div class="label-row"><span>碳水化合物 Carbs</span><span id="male-c-ratio">148 / 150g</span></div>
-                    <div class="bar-bg"><div class="bar-fill" id="male-c-fill" style="width: 98%;"></div></div>
+                    <div class="label-row"><span>碳水化合物 Carbs</span><span id="male-c-ratio">0 / 150g</span></div>
+                    <div class="bar-bg"><div class="bar-fill" id="male-c-fill" style="width: 0%;"></div></div>
+                  </div>
+                  <div class="progress-bar-wrapper">
+                    <div class="label-row"><span>脂肪 Fat</span><span id="male-fat-ratio">0 / 68g</span></div>
+                    <div class="bar-bg"><div class="bar-fill" id="male-fat-fill" style="width: 0%;"></div></div>
+                  </div>
+                  <div class="progress-bar-wrapper">
+                    <div class="label-row"><span>膳食纖維 Fiber</span><span id="male-fiber-ratio">0 / 30g</span></div>
+                    <div class="bar-bg"><div class="bar-fill" id="male-fiber-fill" style="width: 0%;"></div></div>
                   </div>
                 </div>
               </div>
@@ -87,8 +95,16 @@
                     <div class="bar-bg"><div class="bar-fill" id="female-p-fill" style="width: 96%;"></div></div>
                   </div>
                   <div class="progress-bar-wrapper">
-                    <div class="label-row"><span>碳水化合物 Carbs</span><span id="female-c-ratio">125 / 135g</span></div>
-                    <div class="bar-bg"><div class="bar-fill" id="female-c-fill" style="width: 92%;"></div></div>
+                    <div class="label-row"><span>碳水化合物 Carbs</span><span id="female-c-ratio">0 / 130g</span></div>
+                    <div class="bar-bg"><div class="bar-fill" id="female-c-fill" style="width: 0%;"></div></div>
+                  </div>
+                  <div class="progress-bar-wrapper">
+                    <div class="label-row"><span>脂肪 Fat</span><span id="female-fat-ratio">0 / 54g</span></div>
+                    <div class="bar-bg"><div class="bar-fill" id="female-fat-fill" style="width: 0%;"></div></div>
+                  </div>
+                  <div class="progress-bar-wrapper">
+                    <div class="label-row"><span>膳食纖維 Fiber</span><span id="female-fiber-ratio">0 / 25g</span></div>
+                    <div class="bar-bg"><div class="bar-fill" id="female-fiber-fill" style="width: 0%;"></div></div>
                   </div>
                 </div>
               </div>
@@ -183,6 +199,8 @@
                           <th>蛋白質 (g)</th>
                           <th>碳水 (g)</th>
                           <th>脂肪 (g)</th>
+                          <th>纖維 (g)</th>
+                          <th>鈉 (mg)</th>
                           <th>操作</th>
                         </tr>
                       </thead>
@@ -192,7 +210,7 @@
                     </table>
                   </div>
                   <div class="results-summary">
-                    <p>總計：熱量 <span id="total-anal-cal">0</span> kcal | 蛋白質 <span id="total-anal-p">0</span>g | 碳水 <span id="total-anal-c">0</span>g | 脂肪 <span id="total-anal-f">0</span>g</p>
+                    <p>總計：熱量 <span id="total-anal-cal">0</span> kcal | 蛋白質 <span id="total-anal-p">0</span>g | 碳水 <span id="total-anal-c">0</span>g | 脂肪 <span id="total-anal-f">0</span>g | 纖維 <span id="total-anal-fiber">0</span>g | 鈉 <span id="total-anal-sodium">0</span>mg</p>
                   </div>
                   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.25rem;">
                     <button class="ai-action-btn success" id="import-ingredients-btn" style="width: 100%;">📥 匯入至飲食日誌</button>
@@ -533,7 +551,11 @@
                     <span id="m-energy-net-badge" style="padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.9rem; background: rgba(255,255,255,0.05);">0 kcal</span>
                   </div>
                 </div>
-                
+
+                <!-- Nutrient breakdown (rendered by JS, same data source as Tab 1) -->
+                <h4 class="nutrient-breakdown-title">🥗 今日營養素攝取進度</h4>
+                <div class="nutrient-breakdown" id="m-nutrient-rows"></div>
+
                 <!-- Quick Logger -->
                 <form id="chart-male-weight-form" class="log-form-stacked" style="background: rgba(15, 23, 42, 0.3); padding: 0.75rem; border-radius: 8px;">
                   <h4 style="margin: 0 0 0.5rem 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">⚖️ 快速登記今日體重與體脂</h4>
@@ -569,7 +591,11 @@
                     <span id="f-energy-net-badge" style="padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.9rem; background: rgba(255,255,255,0.05);">0 kcal</span>
                   </div>
                 </div>
-                
+
+                <!-- Nutrient breakdown (rendered by JS, same data source as Tab 1) -->
+                <h4 class="nutrient-breakdown-title">🥗 今日營養素攝取進度</h4>
+                <div class="nutrient-breakdown" id="f-nutrient-rows"></div>
+
                 <!-- Quick Logger -->
                 <form id="chart-female-weight-form" class="log-form-stacked" style="background: rgba(15, 23, 42, 0.3); padding: 0.75rem; border-radius: 8px;">
                   <h4 style="margin: 0 0 0.5rem 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">⚖️ 快速登記今日體重與體脂</h4>
@@ -685,6 +711,6 @@
   </div>
 
   <!-- JavaScript logic -->
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
