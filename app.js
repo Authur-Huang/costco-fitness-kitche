@@ -218,6 +218,26 @@ const workoutLogLoad = document.getElementById('workout-log-load');
 const workoutLogIntensity = document.getElementById('workout-log-intensity');
 const workoutLogDesc = document.getElementById('workout-log-desc');
 const workoutLogBurned = document.getElementById('workout-log-burned');
+
+// Energy Balance Sheet Elements
+const mEnergyIntake = document.getElementById('m-energy-intake');
+const mEnergyWorkout = document.getElementById('m-energy-workout');
+const mEnergyBmr = document.getElementById('m-energy-bmr');
+const mEnergyNetBadge = document.getElementById('m-energy-net-badge');
+
+const fEnergyIntake = document.getElementById('f-energy-intake');
+const fEnergyWorkout = document.getElementById('f-energy-workout');
+const fEnergyBmr = document.getElementById('f-energy-bmr');
+const fEnergyNetBadge = document.getElementById('f-energy-net-badge');
+
+const chartMaleWeightForm = document.getElementById('chart-male-weight-form');
+const chartFemaleWeightForm = document.getElementById('chart-female-weight-form');
+const chartMaleDate = document.getElementById('chart-male-date');
+const chartMaleW = document.getElementById('chart-male-w');
+const chartMaleF = document.getElementById('chart-male-f');
+const chartFemaleDate = document.getElementById('chart-female-date');
+const chartFemaleW = document.getElementById('chart-female-w');
+const chartFemaleF = document.getElementById('chart-female-f');
 const workoutInfoTip = document.getElementById('workout-info-tip');
 
 // History logs tab buttons
@@ -249,6 +269,8 @@ function setDefaultDates() {
   logFemaleDate.value = today;
   workoutLogDate.value = today;
   aiLogDate.value = today;
+  if (chartMaleDate) chartMaleDate.value = today;
+  if (chartFemaleDate) chartFemaleDate.value = today;
 }
 
 // Setup Event Listeners
@@ -501,6 +523,78 @@ function setupLogFormListeners() {
       renderInventoryList();
       updateRecipes();
       alert(`已成功將「${name}」${qty}${unit} 存入冰箱庫存！`);
+    });
+  }
+
+  // Chart Male Weight Form submission
+  if (chartMaleWeightForm) {
+    chartMaleWeightForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const date = chartMaleDate.value;
+      const maleW = parseFloat(chartMaleW.value);
+      const maleF = parseFloat(chartMaleF.value);
+
+      if (isNaN(maleW) || maleW <= 0) return;
+
+      const existing = fitnessDB.maleWeightHistory.find(h => h.date === date);
+      if (existing) {
+        existing.weight = maleW;
+        existing.fat = isNaN(maleF) ? null : maleF;
+      } else {
+        fitnessDB.maleWeightHistory.push({ date, weight: maleW, fat: isNaN(maleF) ? null : maleF });
+      }
+      fitnessDB.maleWeightHistory.sort((a,b) => a.date.localeCompare(b.date));
+
+      // Sync sidebar inputs
+      maleWeightInput.value = maleW;
+      if (!isNaN(maleF)) maleTargetFatInput.value = maleF;
+
+      // Sync the other weight form input
+      logMaleW.value = maleW;
+      if (!isNaN(maleF)) logMaleF.value = maleF;
+      logMaleDate.value = date;
+
+      calculateTargets();
+      saveSharedData();
+      renderHistoryTable();
+      drawCharts();
+      alert('男生體重體脂登錄成功！圖表與每日基礎代謝率已同步更新！');
+    });
+  }
+
+  // Chart Female Weight Form submission
+  if (chartFemaleWeightForm) {
+    chartFemaleWeightForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const date = chartFemaleDate.value;
+      const femaleW = parseFloat(chartFemaleW.value);
+      const femaleF = parseFloat(chartFemaleF.value);
+
+      if (isNaN(femaleW) || femaleW <= 0) return;
+
+      const existing = fitnessDB.femaleWeightHistory.find(h => h.date === date);
+      if (existing) {
+        existing.weight = femaleW;
+        existing.fat = isNaN(femaleF) ? null : femaleF;
+      } else {
+        fitnessDB.femaleWeightHistory.push({ date, weight: femaleW, fat: isNaN(femaleF) ? null : femaleF });
+      }
+      fitnessDB.femaleWeightHistory.sort((a,b) => a.date.localeCompare(b.date));
+
+      // Sync sidebar inputs
+      femaleWeightInput.value = femaleW;
+      if (!isNaN(femaleF)) femaleTargetWeightInput.value = femaleW;
+
+      // Sync the other weight form input
+      logFemaleW.value = femaleW;
+      if (!isNaN(femaleF)) logFemaleF.value = femaleF;
+      logFemaleDate.value = date;
+
+      calculateTargets();
+      saveSharedData();
+      renderHistoryTable();
+      drawCharts();
+      alert('女生體重體脂登錄成功！圖表與每日基礎代謝率已同步更新！');
     });
   }
 }
@@ -844,6 +938,53 @@ function updateTodayProgress(mCalGoal, mPGoal, fCalGoal, fPGoal) {
   femalePFill.style.width = `${Math.min((fPAct / fPGoal) * 100, 100)}%`;
   femaleCRatio.textContent = `${fCAct} / ${fCGoal}g`;
   femaleCFill.style.width = `${Math.min((fCAct / fCGoal) * 100, 100)}%`;
+
+  // Update Deficit Dashboard elements
+  if (mEnergyIntake) {
+    const mWeight = parseFloat(maleWeightInput.value) || 85;
+    const mHeight = parseFloat(maleHeightInput.value) || 180;
+    const mAge = parseFloat(maleAgeInput.value) || 30;
+    const mBMR = Math.round(10 * mWeight + 6.25 * mHeight - 5 * mAge + 5);
+
+    mEnergyIntake.textContent = mCalAct;
+    mEnergyWorkout.textContent = mCalBurned;
+    mEnergyBmr.textContent = mBMR;
+
+    const mNet = mCalAct - mCalBurned - mBMR;
+    mEnergyNetBadge.textContent = `${mNet > 0 ? '+' : ''}${mNet} kcal`;
+    if (mNet <= 0) {
+      mEnergyNetBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+      mEnergyNetBadge.style.color = '#34d399';
+      mEnergyNetBadge.textContent += ' (✔️ 熱量赤字)';
+    } else {
+      mEnergyNetBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+      mEnergyNetBadge.style.color = '#f87171';
+      mEnergyNetBadge.textContent += ' (⚠️ 熱量盈餘)';
+    }
+  }
+
+  if (fEnergyIntake) {
+    const fWeight = parseFloat(femaleWeightInput.value) || 67;
+    const fHeight = parseFloat(femaleHeightInput.value) || 170;
+    const fAge = parseFloat(femaleAgeInput.value) || 30;
+    const fBMR = Math.round(10 * fWeight + 6.25 * fHeight - 5 * fAge - 161);
+
+    fEnergyIntake.textContent = fCalAct;
+    fEnergyWorkout.textContent = fCalBurned;
+    fEnergyBmr.textContent = fBMR;
+
+    const fNet = fCalAct - fCalBurned - fBMR;
+    fEnergyNetBadge.textContent = `${fNet > 0 ? '+' : ''}${fNet} kcal`;
+    if (fNet <= 0) {
+      fEnergyNetBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+      fEnergyNetBadge.style.color = '#34d399';
+      fEnergyNetBadge.textContent += ' (✔️ 熱量赤字)';
+    } else {
+      fEnergyNetBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+      fEnergyNetBadge.style.color = '#f87171';
+      fEnergyNetBadge.textContent += ' (⚠️ 熱量盈餘)';
+    }
+  }
 }
 
 // Unit conversion helper for Costco Inventory
