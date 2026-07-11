@@ -1341,30 +1341,21 @@ function renderInventoryList() {
   }
   
   fitnessDB.costcoInventory.forEach((item, index) => {
-    const percent = Math.min((item.remaining / item.total) * 100, 100);
     const itemDiv = document.createElement('div');
     itemDiv.className = 'inventory-item';
-    itemDiv.style.marginBottom = '1.25rem';
+    itemDiv.style.marginBottom = '1rem';
     itemDiv.style.background = 'rgba(15, 23, 42, 0.4)';
-    itemDiv.style.padding = '0.75rem';
+    itemDiv.style.padding = '0.75rem 1rem';
     itemDiv.style.borderRadius = '10px';
     itemDiv.style.border = '1px solid rgba(255,255,255,0.05)';
     
-    // Determine color based on inventory level
-    let barColor = '#10b981'; // green
-    if (percent < 25) {
-      barColor = '#ef4444'; // red
-    } else if (percent < 50) {
-      barColor = '#f59e0b'; // orange
-    }
-    
     itemDiv.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
-        <strong style="color:var(--text-main); font-size:0.9rem;">${item.name}</strong>
-        <div style="display:flex; align-items:center; gap:0.35rem; flex-wrap:wrap; justify-content:flex-end;">
-          <input type="number" class="inline-edit-input" style="width:65px; padding:0.1rem 0.25rem; text-align:center; font-weight:bold; font-size:0.8rem; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:var(--text-main); border-radius:4px;" value="${Math.round(item.remaining * 10) / 10}" onchange="updateInventoryItem(${index}, parseFloat(this.value) || 0)">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <strong style="color:var(--text-main); font-size:0.95rem;">${item.name}</strong>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <input type="number" class="inline-edit-input" style="width:75px; padding:0.15rem 0.3rem; text-align:center; font-weight:bold; font-size:0.85rem; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:var(--text-main); border-radius:4px;" value="${Math.round(item.remaining * 10) / 10}" onchange="updateInventoryItem(${index}, parseFloat(this.value) || 0)">
           
-          <select style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:var(--text-main); font-size:0.75rem; border-radius:4px; padding:0.1rem 0.25rem; font-weight:500;" onchange="updateInventoryItemUnit(${index}, this.value)">
+          <select style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:var(--text-main); font-size:0.8rem; border-radius:4px; padding:0.15rem 0.3rem; font-weight:500;" onchange="updateInventoryItemUnit(${index}, this.value)">
             <option value="g" ${item.unit === 'g' ? 'selected' : ''}>g</option>
             <option value="kg" ${item.unit === 'kg' ? 'selected' : ''}>kg</option>
             <option value="ml" ${item.unit === 'ml' ? 'selected' : ''}>ml</option>
@@ -1381,16 +1372,8 @@ function renderInventoryList() {
             <option value="片" ${item.unit === '片' ? 'selected' : ''}>片</option>
           </select>
           
-          <span style="font-size:0.75rem; color:var(--text-muted);">/ 總</span>
-          
-          <input type="number" class="inline-edit-input" style="width:65px; padding:0.1rem 0.25rem; text-align:center; font-weight:bold; font-size:0.8rem; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:var(--text-main); border-radius:4px;" value="${Math.round(item.total * 10) / 10}" onchange="updateInventoryItemTotal(${index}, parseFloat(this.value) || 0)">
-          <span style="font-size:0.75rem; color:var(--text-muted);">${item.unit}</span>
-          
-          <button class="remove-btn" style="position:static; padding:0.15rem 0.35rem; font-size:0.7rem; border-radius:4px; cursor:pointer;" onclick="deleteInventoryItem(${index})">🗑️</button>
+          <button class="remove-btn" style="position:static; padding:0.2rem 0.4rem; font-size:0.75rem; border-radius:4px; cursor:pointer;" onclick="deleteInventoryItem(${index})">🗑️</button>
         </div>
-      </div>
-      <div class="bar-bg" style="height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden;">
-        <div class="bar-fill" style="width:${percent}%; height:100%; background:${barColor}; transition:width 0.3s ease;"></div>
       </div>
     `;
     inventoryList.appendChild(itemDiv);
@@ -1399,7 +1382,8 @@ function renderInventoryList() {
 
 window.updateInventoryItem = function(index, val) {
   if (fitnessDB.costcoInventory && fitnessDB.costcoInventory[index]) {
-    fitnessDB.costcoInventory[index].remaining = Math.max(0, Math.min(val, fitnessDB.costcoInventory[index].total));
+    fitnessDB.costcoInventory[index].remaining = Math.max(0, val);
+    fitnessDB.costcoInventory[index].total = Math.max(0.1, val);
     saveSharedData();
     renderInventoryList();
     updateRecipes();
@@ -1409,15 +1393,6 @@ window.updateInventoryItem = function(index, val) {
 window.updateInventoryItemUnit = function(index, unit) {
   if (fitnessDB.costcoInventory && fitnessDB.costcoInventory[index]) {
     fitnessDB.costcoInventory[index].unit = unit;
-    saveSharedData();
-    renderInventoryList();
-    updateRecipes();
-  }
-};
-
-window.updateInventoryItemTotal = function(index, total) {
-  if (fitnessDB.costcoInventory && fitnessDB.costcoInventory[index]) {
-    fitnessDB.costcoInventory[index].total = Math.max(0.1, total);
     saveSharedData();
     renderInventoryList();
     updateRecipes();
