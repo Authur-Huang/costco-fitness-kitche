@@ -61,10 +61,19 @@ const nutritionDB = {
   "雞腿肉": { cal: 116, p: 20, c: 0, f: 4, unit: "g" },
   "去骨雞腿肉": { cal: 116, p: 20, c: 0, f: 4, unit: "g" },
   "雞胸肉": { cal: 110, p: 23, c: 0, f: 1.5, unit: "g" },
+  "雞里肌": { cal: 110, p: 23, c: 0, f: 1, unit: "g" },
+  "里肌肉": { cal: 110, p: 23, c: 0, f: 1, unit: "g" },
   "豬五花": { cal: 368, p: 17, c: 0, f: 33, unit: "g" },
   "五花肉": { cal: 368, p: 17, c: 0, f: 33, unit: "g" },
   "豬絞肉": { cal: 230, p: 18, c: 0, f: 17, unit: "g" },
   "絞肉": { cal: 230, p: 18, c: 0, f: 17, unit: "g" },
+  "牛肉": { cal: 200, p: 26, c: 0, f: 10, unit: "g" },
+  "牛排": { cal: 200, p: 26, c: 0, f: 10, unit: "g" },
+  "沙朗": { cal: 200, p: 26, c: 0, f: 10, unit: "g" },
+  "鮭魚": { cal: 206, p: 22, c: 0, f: 12, unit: "g" },
+  "鯛魚": { cal: 110, p: 20, c: 0, f: 2, unit: "g" },
+  "蝦仁": { cal: 85, p: 20, c: 0, f: 1, unit: "g" },
+  "蝦": { cal: 85, p: 20, c: 0, f: 1, unit: "g" },
   "豆腐": { cal: 80, p: 8, c: 2, f: 4.5, unit: "g" },
   "板豆腐": { cal: 80, p: 8, c: 2, f: 4.5, unit: "g" },
   "雞蛋": { cal: 75, p: 6.5, c: 0.5, f: 5, unit: "顆" },
@@ -75,8 +84,22 @@ const nutritionDB = {
   "花椰菜": { cal: 34, p: 3, c: 7, f: 0.3, unit: "g" },
   "紅蘿蔔": { cal: 41, p: 1, c: 10, f: 0.2, unit: "g" },
   "洋蔥": { cal: 40, p: 1.1, c: 9.3, f: 0.1, unit: "g" },
+  "高麗菜": { cal: 25, p: 1.3, c: 6, f: 0.1, unit: "g" },
+  "生菜": { cal: 15, p: 1, c: 3, f: 0.1, unit: "g" },
+  "沙拉": { cal: 15, p: 1, c: 3, f: 0.1, unit: "g" },
+  "地瓜": { cal: 86, p: 1.6, c: 20, f: 0.1, unit: "g" },
+  "番薯": { cal: 86, p: 1.6, c: 20, f: 0.1, unit: "g" },
+  "白飯": { cal: 130, p: 2.7, c: 28, f: 0.3, unit: "g" },
+  "米飯": { cal: 130, p: 2.7, c: 28, f: 0.3, unit: "g" },
+  "飯": { cal: 130, p: 2.7, c: 28, f: 0.3, unit: "g" },
   "麥片": { cal: 380, p: 13, c: 67, f: 7, unit: "g" },
-  "燕麥片": { cal: 380, p: 13, c: 67, f: 7, unit: "g" }
+  "燕麥片": { cal: 380, p: 13, c: 67, f: 7, unit: "g" },
+  "牛奶": { cal: 60, p: 3.2, c: 4.8, f: 3.2, unit: "ml" },
+  "鮮乳": { cal: 60, p: 3.2, c: 4.8, f: 3.2, unit: "ml" },
+  "希臘優格": { cal: 60, p: 9, c: 3.5, f: 1, unit: "g" },
+  "優格": { cal: 60, p: 9, c: 3.5, f: 1, unit: "g" },
+  "豆漿": { cal: 35, p: 3.5, c: 1.5, f: 2, unit: "ml" },
+  "豆奶": { cal: 35, p: 3.5, c: 1.5, f: 2, unit: "ml" }
 };
 
 // Global App State
@@ -913,6 +936,31 @@ function displayAnalysisResults() {
 window.updateAiIngredient = function(index, field, value) {
   if (parsedIngredientsList[index]) {
     parsedIngredientsList[index][field] = value;
+    
+    // Auto-recalculate nutrition if name or weight changes
+    if (field === 'name' || field === 'weight') {
+      const currentName = parsedIngredientsList[index].name || "";
+      // Fuzzy search in nutritionDB
+      let matchKey = Object.keys(nutritionDB).find(key => currentName.includes(key) || key.includes(currentName));
+      
+      if (matchKey) {
+        const nut = nutritionDB[matchKey];
+        const weight = parsedIngredientsList[index].weight || 0;
+        const isGramOrMl = nut.unit === 'g' || nut.unit === 'ml';
+        const multiplier = isGramOrMl ? (weight / 100) : weight;
+
+        parsedIngredientsList[index].calories = Math.round(nut.cal * multiplier);
+        parsedIngredientsList[index].protein = Math.round(nut.p * multiplier * 10) / 10;
+        parsedIngredientsList[index].carbs = Math.round(nut.c * multiplier * 10) / 10;
+        parsedIngredientsList[index].fat = Math.round(nut.f * multiplier * 10) / 10;
+        parsedIngredientsList[index].unit = nut.unit;
+
+        // Re-render display to reflect automatically calculated values
+        displayAnalysisResults();
+        return;
+      }
+    }
+
     calculateAiTotals();
   }
 };
