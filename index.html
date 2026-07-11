@@ -39,6 +39,7 @@
       <!-- Main Navigation Tabs -->
       <nav class="main-nav">
         <button class="nav-tab active" id="tab-nav-kitchen">🍳 備餐與 AI 食材分析</button>
+        <button class="nav-tab" id="tab-nav-recipes">📖 智慧食譜與庫存</button>
         <button class="nav-tab" id="tab-nav-log">📝 雙人每日日誌</button>
         <button class="nav-tab" id="tab-nav-charts">📈 減脂歷史趨勢圖</button>
       </nav>
@@ -262,7 +263,10 @@
                   <div class="results-summary">
                     <p>總計：熱量 <span id="total-anal-cal">0</span> kcal | 蛋白質 <span id="total-anal-p">0</span>g | 碳水 <span id="total-anal-c">0</span>g | 脂肪 <span id="total-anal-f">0</span>g</p>
                   </div>
-                  <button class="ai-action-btn success" id="import-ingredients-btn">📥 將分析食材匯入今日菜單進度</button>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.25rem;">
+                    <button class="ai-action-btn success" id="import-ingredients-btn" style="width: 100%;">📥 匯入至飲食日誌</button>
+                    <button class="ai-action-btn primary" id="import-to-inventory-btn" style="width: 100%; background: #0ea5e9;">🛒 匯入為庫存採買</button>
+                  </div>
                 </div>
               </div>
             </div>
