@@ -432,7 +432,7 @@ function setupLogFormListeners() {
     const name = workoutLogName.value.trim();
     const duration = parseFloat(workoutLogDuration.value) || 0;
     const desc = workoutLogDesc.value.trim();
-    const burnedCal = parseFloat(workoutLogBurned.value) || 0;
+    const burnedCal = parseFloat(workoutLogBurned.textContent) || 0;
 
     fitnessDB.workoutLogs.push({ date, who, type, name, duration, desc, burnedCal });
     fitnessDB.workoutLogs.sort((a,b) => b.date.localeCompare(a.date));
@@ -498,7 +498,7 @@ function calculateBurnedCalories() {
   
   // Calories = MET * Weight (kg) * (Duration / 60)
   const calories = Math.round(met * weight * (duration / 60));
-  workoutLogBurned.value = calories;
+  workoutLogBurned.textContent = calories;
   
   // Dynamic Tip text
   let tip = "";
