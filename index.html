@@ -444,53 +444,10 @@
             </section>
           </div>
 
-          <!-- Add Food / Workout Card -->
-          <div class="log-split-grid">
-            <!-- Add Food Log -->
-            <section class="log-section">
-              <h2>🥗 新增飲食日誌</h2>
-              <form id="food-log-form" class="log-form-stacked">
-                <div class="form-group">
-                  <label for="food-log-date">選擇日期</label>
-                  <input type="date" id="food-log-date" required>
-                </div>
-                <div class="form-group">
-                  <label for="food-log-who">對象</label>
-                  <select id="food-log-who" required>
-                    <option value="both">👫 兩人</option>
-                    <option value="male">🙋‍♂️ 男生</option>
-                    <option value="female">🙋‍♀️ 女生</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="food-log-meal">餐別</label>
-                  <select id="food-log-meal" required>
-                    <option value="早餐">🥣 早餐</option>
-                    <option value="午餐">🍱 午餐</option>
-                    <option value="晚餐">🍽️ 晚餐</option>
-                    <option value="點心">🍎 點心/補充</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="food-log-name">食物名稱</label>
-                  <input type="text" id="food-log-name" placeholder="例如：去皮烤雞腿排" required>
-                </div>
-                <div class="form-group-row">
-                  <div class="form-group">
-                    <label for="food-log-cal">熱量 (kcal)</label>
-                    <input type="number" id="food-log-cal" placeholder="卡路里" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="food-log-p">蛋白質 (g)</label>
-                    <input type="number" id="food-log-p" placeholder="蛋白質" required>
-                  </div>
-                </div>
-                <button type="submit" class="ai-action-btn success">➕ 新增飲食紀錄</button>
-              </form>
-            </section>
-
+          <!-- Add Workout Card -->
+          <div style="margin-top: 2rem; display: flex; justify-content: center;">
             <!-- Add Workout Log -->
-            <section class="log-section">
+            <section class="log-section" style="width: 100%; max-width: 600px;">
               <h2>💪 新增運動日誌</h2>
               <form id="workout-log-form" class="log-form-stacked">
                 <div class="form-group">

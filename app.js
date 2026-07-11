@@ -193,24 +193,16 @@ const paneCharts = document.getElementById('pane-charts');
 // Log Form elements
 const logMaleDate = document.getElementById('log-male-date');
 const logFemaleDate = document.getElementById('log-female-date');
-const foodLogDate = document.getElementById('food-log-date');
 const workoutLogDate = document.getElementById('workout-log-date');
 
 const maleWeightLogForm = document.getElementById('male-weight-log-form');
 const femaleWeightLogForm = document.getElementById('female-weight-log-form');
-const foodLogForm = document.getElementById('food-log-form');
 const workoutLogForm = document.getElementById('workout-log-form');
 
 const logMaleW = document.getElementById('log-male-w');
 const logMaleF = document.getElementById('log-male-f');
 const logFemaleW = document.getElementById('log-female-w');
 const logFemaleF = document.getElementById('log-female-f');
-
-const foodLogWho = document.getElementById('food-log-who');
-const foodLogMeal = document.getElementById('food-log-meal');
-const foodLogName = document.getElementById('food-log-name');
-const foodLogCal = document.getElementById('food-log-cal');
-const foodLogP = document.getElementById('food-log-p');
 
 const workoutLogWho = document.getElementById('workout-log-who');
 const workoutLogName = document.getElementById('workout-log-name');
@@ -242,7 +234,6 @@ function setDefaultDates() {
   const today = new Date().toISOString().split('T')[0];
   logMaleDate.value = today;
   logFemaleDate.value = today;
-  foodLogDate.value = today;
   workoutLogDate.value = today;
   aiLogDate.value = today;
 }
@@ -425,30 +416,6 @@ function setupLogFormListeners() {
     saveSharedData();
     renderHistoryTable();
     alert('已成功儲存女生體重體脂資料！');
-  });
-
-  // Food log submission
-  foodLogForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const date = foodLogDate.value;
-    const who = foodLogWho.value;
-    const meal = foodLogMeal.value;
-    const name = foodLogName.value.trim();
-    const cal = Math.round(parseFloat(foodLogCal.value));
-    const p = Math.round(parseFloat(foodLogP.value) * 10) / 10;
-
-    fitnessDB.foodLogs.push({ date, who, meal, name, cal, p });
-    fitnessDB.foodLogs.sort((a,b) => b.date.localeCompare(a.date));
-
-    // Reset
-    foodLogName.value = '';
-    foodLogCal.value = '';
-    foodLogP.value = '';
-
-    calculateTargets();
-    saveSharedData();
-    renderHistoryTable();
-    alert('飲食紀錄成功儲存！');
   });
 
   // Workout log submission
