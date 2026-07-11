@@ -10,6 +10,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
   <!-- CSS Stylesheet -->
   <link rel="stylesheet" href="style.css">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div class="app-container">
@@ -19,7 +21,17 @@
         <span class="logo-icon">🔥</span>
         <h1>Costco <span>健身廚房</span></h1>
       </div>
-      <p class="header-subtitle">雙人增肌減脂備餐與熱量配給系統</p>
+      <div class="header-desc-row">
+        <p class="header-subtitle">雙人增肌減脂備餐與熱量配給系統</p>
+        <span id="sync-status" class="sync-status-indicator">🔄 雲端數據同步中...</span>
+      </div>
+      
+      <!-- Main Navigation Tabs -->
+      <nav class="main-nav">
+        <button class="nav-tab active" id="tab-nav-kitchen">🍳 備餐與 AI 食材分析</button>
+        <button class="nav-tab" id="tab-nav-log">📝 雙人每日日誌</button>
+        <button class="nav-tab" id="tab-nav-charts">📈 減脂歷史趨勢圖</button>
+      </nav>
     </header>
 
     <div class="dashboard-layout">
@@ -34,7 +46,7 @@
           <div class="profile-inputs">
             <div class="input-group">
               <label for="male-weight">體重 (kg)</label>
-              <input type="number" id="male-weight" value="85" min="40" max="150">
+              <input type="number" id="male-weight" value="85" min="40" max="150" step="0.1">
             </div>
             <div class="input-group">
               <label for="male-height">身高 (cm)</label>
@@ -63,7 +75,7 @@
           <div class="profile-inputs">
             <div class="input-group">
               <label for="female-weight">體重 (kg)</label>
-              <input type="number" id="female-weight" value="67" min="30" max="120">
+              <input type="number" id="female-weight" value="67" min="30" max="120" step="0.1">
             </div>
             <div class="input-group">
               <label for="female-height">身高 (cm)</label>
@@ -100,255 +112,414 @@
             <p class="prep-duration">此包裝可供雙人吃 <span id="prep-days">6</span> 天份的晚餐！</p>
           </div>
         </div>
+
+        <!-- Shared Sync Settings Card -->
+        <div class="costco-box sync-settings-box">
+          <h3>🔗 雙人同步設定</h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+            使用此連結在伴侶的手機開啟，即可共享實時數據！
+          </p>
+          <button class="ai-action-btn primary" id="copy-share-link-btn" style="font-size: 0.8rem; padding: 0.5rem;">
+            📋 複製雙人共享網址
+          </button>
+        </div>
       </aside>
 
       <!-- Main Content -->
       <main class="main-panel">
-        <!-- Daily Macro Overview -->
-        <section class="overview-section">
-          <h2>📊 每日熱量與巨量營養素配給</h2>
-          <div class="macro-charts">
-            <!-- Male Macros -->
-            <div class="macro-chart-box male-theme">
-              <h4>🙋‍♂️ 男生今日攝取進度</h4>
-              <div class="progress-container">
-                <div class="progress-bar-wrapper">
-                  <div class="label-row"><span>熱量 Calories</span><span id="male-cal-ratio">1840 / 1840 kcal</span></div>
-                  <div class="bar-bg"><div class="bar-fill" id="male-cal-fill" style="width: 100%;"></div></div>
+        
+        <!-- Tab 1: Kitchen & AI Prep -->
+        <div class="tab-pane active" id="pane-kitchen">
+          <!-- Daily Macro Overview -->
+          <section class="overview-section">
+            <h2>📊 每日熱量與巨量營養素配給</h2>
+            <div class="macro-charts">
+              <!-- Male Macros -->
+              <div class="macro-chart-box male-theme">
+                <h4>🙋‍♂️ 男生今日攝取進度</h4>
+                <div class="progress-container">
+                  <div class="progress-bar-wrapper">
+                    <div class="label-row"><span>熱量 Calories</span><span id="male-cal-ratio">1840 / 1840 kcal</span></div>
+                    <div class="bar-bg"><div class="bar-fill" id="male-cal-fill" style="width: 100%;"></div></div>
+                  </div>
+                  <div class="progress-bar-wrapper">
+                    <div class="label-row"><span>蛋白質 Protein</span><span id="male-p-ratio">172 / 170g</span></div>
+                    <div class="bar-bg"><div class="bar-fill" id="male-p-fill" style="width: 100%;"></div></div>
+                  </div>
+                  <div class="progress-bar-wrapper">
+                    <div class="label-row"><span>碳水化合物 Carbs</span><span id="male-c-ratio">148 / 150g</span></div>
+                    <div class="bar-bg"><div class="bar-fill" id="male-c-fill" style="width: 98%;"></div></div>
+                  </div>
                 </div>
-                <div class="progress-bar-wrapper">
-                  <div class="label-row"><span>蛋白質 Protein</span><span id="male-p-ratio">172 / 170g</span></div>
-                  <div class="bar-bg"><div class="bar-fill" id="male-p-fill" style="width: 100%;"></div></div>
-                </div>
-                <div class="progress-bar-wrapper">
-                  <div class="label-row"><span>碳水化合物 Carbs</span><span id="male-c-ratio">148 / 150g</span></div>
-                  <div class="bar-bg"><div class="bar-fill" id="male-c-fill" style="width: 98%;"></div></div>
+              </div>
+
+              <!-- Female Macros -->
+              <div class="macro-chart-box female-theme">
+                <h4>🙋‍♀️ 女生今日攝取進度</h4>
+                <div class="progress-container">
+                  <div class="progress-bar-wrapper">
+                    <div class="label-row"><span>熱量 Calories</span><span id="female-cal-ratio">1465 / 1500 kcal</span></div>
+                    <div class="bar-bg"><div class="bar-fill" id="female-cal-fill" style="width: 97%;"></div></div>
+                  </div>
+                  <div class="progress-bar-wrapper">
+                    <div class="label-row"><span>蛋白質 Protein</span><span id="female-p-ratio">116 / 120g</span></div>
+                    <div class="bar-bg"><div class="bar-fill" id="female-p-fill" style="width: 96%;"></div></div>
+                  </div>
+                  <div class="progress-bar-wrapper">
+                    <div class="label-row"><span>碳水化合物 Carbs</span><span id="female-c-ratio">125 / 135g</span></div>
+                    <div class="bar-bg"><div class="bar-fill" id="female-c-fill" style="width: 92%;"></div></div>
+                  </div>
                 </div>
               </div>
             </div>
+          </section>
 
-            <!-- Female Macros -->
-            <div class="macro-chart-box female-theme">
-              <h4>🙋‍♀️ 女生今日攝取進度</h4>
-              <div class="progress-container">
-                <div class="progress-bar-wrapper">
-                  <div class="label-row"><span>熱量 Calories</span><span id="female-cal-ratio">1465 / 1500 kcal</span></div>
-                  <div class="bar-bg"><div class="bar-fill" id="female-cal-fill" style="width: 97%;"></div></div>
+          <!-- AI Ingredients Analysis Section -->
+          <section class="ai-analysis-section">
+            <h2>📸 AI 食材拍照與分析儀表板</h2>
+            <p class="section-desc">上傳您的 Costco 採買照片或發票，或直接輸入食材清單，AI 將為您辨識並精準解析熱量與蛋白質！</p>
+            
+            <div class="ai-grid">
+              <!-- Left: Inputs -->
+              <div class="ai-inputs-panel">
+                <!-- Tabs for Photo vs Text -->
+                <div class="ai-tabs">
+                  <button class="ai-tab-btn active" id="tab-btn-photo">📷 照片/發票辨識</button>
+                  <button class="ai-tab-btn" id="tab-btn-text">✍️ 文字/收據輸入</button>
                 </div>
-                <div class="progress-bar-wrapper">
-                  <div class="label-row"><span>蛋白質 Protein</span><span id="female-p-ratio">116 / 120g</span></div>
-                  <div class="bar-bg"><div class="bar-fill" id="female-p-fill" style="width: 96%;"></div></div>
-                </div>
-                <div class="progress-bar-wrapper">
-                  <div class="label-row"><span>碳水化合物 Carbs</span><span id="female-c-ratio">125 / 135g</span></div>
-                  <div class="bar-bg"><div class="bar-fill" id="female-c-fill" style="width: 92%;"></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
-        <!-- AI Ingredients Analysis Section -->
-        <section class="ai-analysis-section">
-          <h2>📸 AI 食材拍照與分析儀表板</h2>
-          <p class="section-desc">上傳您的 Costco 採買照片或發票，或直接輸入食材清單，AI 將為您辨識並精準解析熱量與蛋白質！</p>
-          
-          <div class="ai-grid">
-            <!-- Left: Inputs -->
-            <div class="ai-inputs-panel">
-              <!-- Tabs for Photo vs Text -->
-              <div class="ai-tabs">
-                <button class="ai-tab-btn active" id="tab-btn-photo">📷 照片/發票辨識</button>
-                <button class="ai-tab-btn" id="tab-btn-text">✍️ 文字/收據輸入</button>
-              </div>
-
-              <!-- Photo Upload Area -->
-              <div class="ai-tab-content active" id="content-photo">
-                <div class="upload-dropzone" id="dropzone">
-                  <span class="upload-icon">📤</span>
-                  <p>拖曳相片至此，或<span>點擊上傳</span></p>
-                  <input type="file" id="file-upload" accept="image/*" style="display: none;">
+                <!-- Photo Upload Area -->
+                <div class="ai-tab-content active" id="content-photo">
+                  <div class="upload-dropzone" id="dropzone">
+                    <span class="upload-icon">📤</span>
+                    <p>拖曳相片至此，或<span>點擊上傳</span></p>
+                    <input type="file" id="file-upload" accept="image/*" style="display: none;">
+                  </div>
+                  <div class="preview-container" id="image-preview-container" style="display: none;">
+                    <img id="image-preview" src="" alt="上傳的食材相片">
+                    <button class="remove-btn" id="remove-img-btn">❌ 移除</button>
+                  </div>
                 </div>
-                <div class="preview-container" id="image-preview-container" style="display: none;">
-                  <img id="image-preview" src="" alt="上傳的食材相片">
-                  <button class="remove-btn" id="remove-img-btn">❌ 移除</button>
-                </div>
-              </div>
 
-              <!-- Text Area Input -->
-              <div class="ai-tab-content" id="content-text">
-                <textarea id="text-input" placeholder="例如：
+                <!-- Text Area Input -->
+                <div class="ai-tab-content" id="content-text">
+                  <textarea id="text-input" placeholder="例如：
 去骨雞腿肉 400克
 豆腐 1盒
 毛豆 150g
 雞蛋 3顆"></textarea>
-                <button class="ai-action-btn" id="analyze-text-btn">🔍 進行文字分析</button>
-              </div>
-
-              <button class="ai-action-btn primary" id="analyze-photo-btn">⚡ 開始 AI 照片辨識</button>
-            </div>
-
-            <!-- Right: Analysis Results -->
-            <div class="ai-results-panel">
-              <div class="loading-overlay" id="ai-loading" style="display: none;">
-                <div class="spinner"></div>
-                <p id="ai-status-text">AI 正在全力解析您的食材...</p>
-              </div>
-              <div class="placeholder-result" id="result-placeholder">
-                <span class="placeholder-icon">🤖</span>
-                <p>上傳照片或輸入文字後，AI 的分析報告會即時顯示在此處。</p>
-              </div>
-              <div class="results-table-container" id="results-container" style="display: none;">
-                <h4>📋 AI 辨識食材與營養分析報告</h4>
-                <table class="results-table">
-                  <thead>
-                    <tr>
-                      <th>食材名稱</th>
-                      <th>估計重量 (g)</th>
-                      <th>熱量 (kcal)</th>
-                      <th>蛋白質 (g)</th>
-                      <th>碳水 (g)</th>
-                      <th>脂肪 (g)</th>
-                    </tr>
-                  </thead>
-                  <tbody id="analysis-table-body">
-                    <!-- Dynamic rows -->
-                  </tbody>
-                </table>
-                <div class="results-summary">
-                  <p>總計：熱量 <span id="total-anal-cal">0</span> kcal | 蛋白質 <span id="total-anal-p">0</span>g | 碳水 <span id="total-anal-c">0</span>g | 脂肪 <span id="total-anal-f">0</span>g</p>
+                  <button class="ai-action-btn" id="analyze-text-btn">🔍 進行文字分析</button>
                 </div>
-                <button class="ai-action-btn success" id="import-ingredients-btn">📥 將分析食材匯入今日菜單進度</button>
+
+                <button class="ai-action-btn primary" id="analyze-photo-btn">⚡ 開始 AI 照片辨識</button>
+              </div>
+
+              <!-- Right: Analysis Results -->
+              <div class="ai-results-panel">
+                <div class="loading-overlay" id="ai-loading" style="display: none;">
+                  <div class="spinner"></div>
+                  <p id="ai-status-text">AI 正在全力解析您的食材...</p>
+                </div>
+                <div class="placeholder-result" id="result-placeholder">
+                  <span class="placeholder-icon">🤖</span>
+                  <p>上傳照片或輸入文字後，AI 的分析報告會即時顯示在此處。</p>
+                </div>
+                <div class="results-table-container" id="results-container" style="display: none;">
+                  <h4>📋 AI 辨識食材與營養分析報告</h4>
+                  <table class="results-table">
+                    <thead>
+                      <tr>
+                        <th>食材名稱</th>
+                        <th>估計重量 (g)</th>
+                        <th>熱量 (kcal)</th>
+                        <th>蛋白質 (g)</th>
+                        <th>碳水 (g)</th>
+                        <th>脂肪 (g)</th>
+                      </tr>
+                    </thead>
+                    <tbody id="analysis-table-body">
+                      <!-- Dynamic rows -->
+                    </tbody>
+                  </table>
+                  <div class="results-summary">
+                    <p>總計：熱量 <span id="total-anal-cal">0</span> kcal | 蛋白質 <span id="total-anal-p">0</span>g | 碳水 <span id="total-anal-c">0</span>g | 脂肪 <span id="total-anal-f">0</span>g</p>
+                  </div>
+                  <button class="ai-action-btn success" id="import-ingredients-btn">📥 將分析食材匯入今日菜單進度</button>
+                </div>
               </div>
             </div>
+          </section>
+
+          <!-- Interactive Recipes Section -->
+          <section class="recipes-section">
+            <h2>🍳 Costco 智慧食譜與分量調整</h2>
+            <div class="portion-selector">
+              <span class="selector-label">顯示份量模式：</span>
+              <button class="portion-btn active" data-mode="both">👫 雙人共餐份量</button>
+              <button class="portion-btn" data-mode="male">🙋‍♂️ 僅男生份量</button>
+              <button class="portion-btn" data-mode="female">🙋‍♀️ 僅女生份量</button>
+            </div>
+
+            <div class="recipe-grid">
+              <!-- Recipe 1: Breakfast Oats -->
+              <div class="recipe-card">
+                <div class="recipe-img-placeholder breakfast-bg">
+                  <span class="recipe-badge">早餐</span>
+                  <span class="recipe-time">⏱️ 5 分鐘</span>
+                  <h3>高蛋白穀物莓果麥片豆奶碗</h3>
+                </div>
+                <div class="recipe-content">
+                  <div class="recipe-equipment">
+                    <span>無需烹調</span>
+                  </div>
+                  <div class="recipe-ingredients">
+                    <h4>🥣 食材清單</h4>
+                    <ul id="ing-list-breakfast">
+                      <!-- Dynamic ingredients -->
+                    </ul>
+                  </div>
+                  <div class="recipe-steps">
+                    <h4>📝 烹飪步驟</h4>
+                    <ol>
+                      <li>在碗中加入燕麥片與綜合穀物/堅果。</li>
+                      <li>倒入無糖豆奶，加入冷凍莓果。</li>
+                      <li>加入乳清蛋白粉，均勻攪拌至粉末溶解即可食用。</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Recipe 2: Pork Tofu Patty -->
+              <div class="recipe-card">
+                <div class="recipe-img-placeholder patty-bg">
+                  <span class="recipe-badge">午餐</span>
+                  <span class="recipe-time">⏱️ 20 分鐘</span>
+                  <h3>豆腐洋蔥豬肉漢堡排</h3>
+                </div>
+                <div class="recipe-content">
+                  <div class="recipe-equipment">
+                    <span>🍳 平底鍋</span><span>💨 氣炸鍋</span>
+                  </div>
+                  <div class="recipe-ingredients">
+                    <h4>🥣 食材清單</h4>
+                    <ul id="ing-list-patty">
+                      <!-- Dynamic ingredients -->
+                    </ul>
+                  </div>
+                  <div class="recipe-steps">
+                    <h4>📝 烹飪步驟</h4>
+                    <ol>
+                      <li>將豆腐捏碎，用乾淨廚房紙巾徹底壓乾水分。洋蔥切細丁炒香放涼。</li>
+                      <li>將豬絞肉、豆腐碎、洋蔥丁、雞蛋與調味料（鹽、胡椒、醬油）混合。</li>
+                      <li>朝同方向攪拌至產生黏性，揉成圓餅狀。</li>
+                      <li>用平底鍋小火煎至熟透，或用氣炸鍋 180度烤 12-15 分鐘。</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Recipe 3: Garlic Chicken Thigh -->
+              <div class="recipe-card">
+                <div class="recipe-img-placeholder chicken-bg">
+                  <span class="recipe-badge">晚餐</span>
+                  <span class="recipe-time">⏱️ 25 分鐘</span>
+                  <h3>蒜香烤去皮雞腿排佐雙色時蔬</h3>
+                </div>
+                <div class="recipe-content">
+                  <div class="recipe-equipment">
+                    <span>💧 水波爐</span><span>🔥 烤箱</span><span>💨 氣炸鍋</span>
+                  </div>
+                  <div class="recipe-ingredients">
+                    <h4>🥣 食材清單</h4>
+                    <ul id="ing-list-chicken">
+                      <!-- Dynamic ingredients -->
+                    </ul>
+                  </div>
+                  <div class="recipe-steps">
+                    <h4>📝 烹飪步驟</h4>
+                    <ol>
+                      <li>去骨雞腿排徹底**去皮**（大幅降脂），用鹽、胡椒、蒜末醃製。</li>
+                      <li>花椰菜、紅蘿蔔、洋蔥切塊，淋上 1 茶匙油抓勻。</li>
+                      <li>鋪於烤盤上，送入水波爐/烤箱（200度烤 22-25 分鐘）或氣炸。</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Recipe 4: Edamame Egg -->
+              <div class="recipe-card">
+                <div class="recipe-img-placeholder egg-bg">
+                  <span class="recipe-badge">配餐/晚餐</span>
+                  <span class="recipe-time">⏱️ 10 分鐘</span>
+                  <h3>高蛋白毛豆仁洋蔥炒蛋</h3>
+                </div>
+                <div class="recipe-content">
+                  <div class="recipe-equipment">
+                    <span>🍳 平底鍋</span>
+                  </div>
+                  <div class="recipe-ingredients">
+                    <h4>🥣 食材清單</h4>
+                    <ul id="ing-list-egg">
+                      <!-- Dynamic ingredients -->
+                    </ul>
+                  </div>
+                  <div class="recipe-steps">
+                    <h4>📝 烹飪步驟</h4>
+                    <ol>
+                      <li>毛豆仁先川燙 3 分鐘裝盤。洋蔥切絲。</li>
+                      <li>熱鍋加 1 茶匙油炒香洋蔥絲，加入毛豆仁翻炒。</li>
+                      <li>倒入打散的蛋液，炒成滑蛋碎，加鹽調味即可。</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Tab 2: Shared Daily Log -->
+        <div class="tab-pane" id="pane-log">
+          <!-- Update Weight / Body Fat Card -->
+          <section class="log-section">
+            <h2>📝 記錄今日體重與體脂</h2>
+            <form id="weight-log-form" class="log-form-grid">
+              <div class="form-group">
+                <label for="log-date">選擇日期</label>
+                <input type="date" id="log-date" required>
+              </div>
+              <div class="form-group">
+                <label for="log-male-w">🙋‍♂️ 男生體重 (kg)</label>
+                <input type="number" id="log-male-w" step="0.1" placeholder="例如：85.0">
+              </div>
+              <div class="form-group">
+                <label for="log-male-f">🙋‍♂️ 男生體脂 (%)</label>
+                <input type="number" id="log-male-f" step="0.1" placeholder="例如：25.0">
+              </div>
+              <div class="form-group">
+                <label for="log-female-w">🙋‍♀️ 女生體重 (kg)</label>
+                <input type="number" id="log-female-w" step="0.1" placeholder="例如：67.0">
+              </div>
+              <div class="form-group">
+                <label for="log-female-f">🙋‍♀️ 女生體脂 (%)</label>
+                <input type="number" id="log-female-f" step="0.1" placeholder="例如：31.7">
+              </div>
+              <button type="submit" class="ai-action-btn primary inline-btn">💾 儲存身體指標</button>
+            </form>
+          </section>
+
+          <!-- Add Food / Workout Card -->
+          <div class="log-split-grid">
+            <!-- Add Food Log -->
+            <section class="log-section">
+              <h2>🥗 新增飲食日誌</h2>
+              <form id="food-log-form" class="log-form-stacked">
+                <div class="form-group">
+                  <label for="food-log-who">對象</label>
+                  <select id="food-log-who" required>
+                    <option value="both">👫 兩人</option>
+                    <option value="male">🙋‍♂️ 男生</option>
+                    <option value="female">🙋‍♀️ 女生</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="food-log-meal">餐別</label>
+                  <select id="food-log-meal" required>
+                    <option value="早餐">🥣 早餐</option>
+                    <option value="午餐">🍱 午餐</option>
+                    <option value="晚餐">🍽️ 晚餐</option>
+                    <option value="點心">🍎 點心/補充</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="food-log-name">食物名稱</label>
+                  <input type="text" id="food-log-name" placeholder="例如：去皮烤雞腿排" required>
+                </div>
+                <div class="form-group-row">
+                  <div class="form-group">
+                    <label for="food-log-cal">熱量 (kcal)</label>
+                    <input type="number" id="food-log-cal" placeholder="卡路里" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="food-log-p">蛋白質 (g)</label>
+                    <input type="number" id="food-log-p" placeholder="蛋白質" required>
+                  </div>
+                </div>
+                <button type="submit" class="ai-action-btn success">➕ 新增飲食紀錄</button>
+              </form>
+            </section>
+
+            <!-- Add Workout Log -->
+            <section class="log-section">
+              <h2>💪 新增運動日誌</h2>
+              <form id="workout-log-form" class="log-form-stacked">
+                <div class="form-group">
+                  <label for="workout-log-who">運動成員</label>
+                  <select id="workout-log-who" required>
+                    <option value="male">🙋‍♂️ 男生</option>
+                    <option value="female">🙋‍♀️ 女生</option>
+                    <option value="both">👫 雙人</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="workout-log-name">運動項目</label>
+                  <input type="text" id="workout-log-name" placeholder="例如：壺鈴搖擺 300 下" required>
+                </div>
+                <div class="form-group">
+                  <label for="workout-log-desc">運動備註 (時間/重量)</label>
+                  <input type="text" id="workout-log-desc" placeholder="例如：16公斤 / 20分鐘">
+                </div>
+                <button type="submit" class="ai-action-btn primary">➕ 新增運動紀錄</button>
+              </form>
+            </section>
           </div>
-        </section>
 
-        <!-- Interactive Recipes Section -->
-        <section class="recipes-section">
-          <h2>🍳 Costco 智慧食譜與分量調整</h2>
-          <div class="portion-selector">
-            <span class="selector-label">顯示份量模式：</span>
-            <button class="portion-btn active" data-mode="both">👫 雙人共餐份量</button>
-            <button class="portion-btn" data-mode="male">🙋‍♂️ 僅男生份量</button>
-            <button class="portion-btn" data-mode="female">🙋‍♀️ 僅女生份量</button>
-          </div>
+          <!-- History Logs List -->
+          <section class="log-section">
+            <h2>📜 歷史紀錄清單</h2>
+            <div class="history-tabs">
+              <button class="history-tab-btn active" id="hist-tab-food">🥗 飲食日誌</button>
+              <button class="history-tab-btn" id="hist-tab-workout">💪 運動日誌</button>
+              <button class="history-tab-btn" id="hist-tab-weight">📏 身體指標</button>
+            </div>
+            
+            <div class="history-table-container">
+              <table class="results-table">
+                <thead id="history-table-head">
+                  <!-- Dynamic headers -->
+                </thead>
+                <tbody id="history-table-body">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
 
-          <div class="recipe-grid">
-            <!-- Recipe 1: Breakfast Oats -->
-            <div class="recipe-card">
-              <div class="recipe-img-placeholder breakfast-bg">
-                <span class="recipe-badge">早餐</span>
-                <span class="recipe-time">⏱️ 5 分鐘</span>
-                <h3>高蛋白穀物莓果麥片豆奶碗</h3>
+        <!-- Tab 3: Fitness Progress Charts -->
+        <div class="tab-pane" id="pane-charts">
+          <section class="log-section">
+            <h2>📈 增肌減脂趨勢看板</h2>
+            <p class="section-desc">視覺化呈現兩位體重與體脂率的變化趨勢，讓努力看得見！</p>
+            
+            <div class="charts-grid">
+              <!-- Weight Chart -->
+              <div class="chart-container-box">
+                <h3>⚖️ 雙人體重變化趨勢 (kg)</h3>
+                <div class="canvas-wrapper">
+                  <canvas id="weightChart"></canvas>
+                </div>
               </div>
-              <div class="recipe-content">
-                <div class="recipe-equipment">
-                  <span>無需烹調</span>
-                </div>
-                <div class="recipe-ingredients">
-                  <h4>🥣 食材清單</h4>
-                  <ul id="ing-list-breakfast">
-                    <!-- Dynamic ingredients -->
-                  </ul>
-                </div>
-                <div class="recipe-steps">
-                  <h4>📝 烹飪步驟</h4>
-                  <ol>
-                    <li>在碗中加入燕麥片與綜合穀物/堅果。</li>
-                    <li>倒入無糖豆奶，加入冷凍莓果。</li>
-                    <li>加入乳清蛋白粉，均勻攪拌至粉末溶解即可食用。</li>
-                  </ol>
+              
+              <!-- Body Fat Chart -->
+              <div class="chart-container-box">
+                <h3>⚡ 雙人體脂率變化趨勢 (%)</h3>
+                <div class="canvas-wrapper">
+                  <canvas id="fatChart"></canvas>
                 </div>
               </div>
             </div>
-
-            <!-- Recipe 2: Pork Tofu Patty -->
-            <div class="recipe-card">
-              <div class="recipe-img-placeholder patty-bg">
-                <span class="recipe-badge">午餐</span>
-                <span class="recipe-time">⏱️ 20 分鐘</span>
-                <h3>豆腐洋蔥豬肉漢堡排</h3>
-              </div>
-              <div class="recipe-content">
-                <div class="recipe-equipment">
-                  <span>🍳 平底鍋</span><span>💨 氣炸鍋</span>
-                </div>
-                <div class="recipe-ingredients">
-                  <h4>🥣 食材清單</h4>
-                  <ul id="ing-list-patty">
-                    <!-- Dynamic ingredients -->
-                  </ul>
-                </div>
-                <div class="recipe-steps">
-                  <h4>📝 烹飪步驟</h4>
-                  <ol>
-                    <li>將豆腐捏碎，用乾淨廚房紙巾徹底壓乾水分。洋蔥切細丁炒香放涼。</li>
-                    <li>將豬絞肉、豆腐碎、洋蔥丁、雞蛋與調味料（鹽、胡椒、醬油）混合。</li>
-                    <li>朝同方向攪拌至產生黏性，揉成圓餅狀。</li>
-                    <li>用平底鍋小火煎至熟透，或用氣炸鍋 180度烤 12-15 分鐘。</li>
-                  </ol>
-                </div>
-              </div>
-            </div>
-
-            <!-- Recipe 3: Garlic Chicken Thigh -->
-            <div class="recipe-card">
-              <div class="recipe-img-placeholder chicken-bg">
-                <span class="recipe-badge">晚餐</span>
-                <span class="recipe-time">⏱️ 25 分鐘</span>
-                <h3>蒜香烤去皮雞腿排佐時蔬</h3>
-              </div>
-              <div class="recipe-content">
-                <div class="recipe-equipment">
-                  <span>💧 水波爐</span><span>🔥 烤箱</span><span>💨 氣炸鍋</span>
-                </div>
-                <div class="recipe-ingredients">
-                  <h4>🥣 食材清單</h4>
-                  <ul id="ing-list-chicken">
-                    <!-- Dynamic ingredients -->
-                  </ul>
-                </div>
-                <div class="recipe-steps">
-                  <h4>📝 烹飪步驟</h4>
-                  <ol>
-                    <li>去骨雞腿排徹底**去皮**（大幅降脂），用鹽、胡椒、蒜末醃製。</li>
-                    <li>花椰菜、紅蘿蔔、洋蔥切塊，淋上 1 茶匙油抓勻。</li>
-                    <li>鋪於烤盤上，送入水波爐/烤箱（200度烤 22-25 分鐘）或氣炸。</li>
-                  </ol>
-                </div>
-              </div>
-            </div>
-
-            <!-- Recipe 4: Edamame Egg -->
-            <div class="recipe-card">
-              <div class="recipe-img-placeholder egg-bg">
-                <span class="recipe-badge">配餐/晚餐</span>
-                <span class="recipe-time">⏱️ 10 分鐘</span>
-                <h3>高蛋白毛豆仁洋蔥炒蛋</h3>
-              </div>
-              <div class="recipe-content">
-                <div class="recipe-equipment">
-                  <span>🍳 平底鍋</span>
-                </div>
-                <div class="recipe-ingredients">
-                  <h4>🥣 食材清單</h4>
-                  <ul id="ing-list-egg">
-                    <!-- Dynamic ingredients -->
-                  </ul>
-                </div>
-                <div class="recipe-steps">
-                  <h4>📝 烹飪步驟</h4>
-                  <ol>
-                    <li>毛豆仁先川燙 3 分鐘撈起。洋蔥切絲。</li>
-                    <li>熱鍋加 1 茶匙油炒香洋蔥絲，加入毛豆仁翻炒。</li>
-                    <li>倒入打散的蛋液，炒成滑蛋碎，加鹽調味即可。</li>
-                  </ol>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </main>
     </div>
   </div>

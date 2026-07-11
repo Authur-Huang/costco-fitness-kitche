@@ -56,7 +56,7 @@ const recipes = {
   }
 };
 
-// Ingredients Nutrition Lookup Database (for offline fallback)
+// Offline Lookup Database
 const nutritionDB = {
   "雞腿肉": { cal: 116, p: 20, c: 0, f: 4, unit: "g" },
   "去骨雞腿肉": { cal: 116, p: 20, c: 0, f: 4, unit: "g" },
@@ -79,11 +79,23 @@ const nutritionDB = {
   "燕麥片": { cal: 380, p: 13, c: 67, f: 7, unit: "g" }
 };
 
-// Current Portion Mode ('both', 'male', 'female')
+// Global App State
 let currentMode = 'both';
 let activeTab = 'photo';
 let uploadedImageBase64 = null;
 let parsedIngredientsList = [];
+
+// Shared Database State
+let fitnessDB = {
+  maleWeightHistory: [],   // { date, weight, fat }
+  femaleWeightHistory: [], // { date, weight, fat }
+  foodLogs: [],            // { date, who, meal, name, cal, p }
+  workoutLogs: []          // { date, who, name, desc }
+};
+
+// Chart instances
+let weightChartInstance = null;
+let fatChartInstance = null;
 
 // DOM Elements
 const maleWeightInput = document.getElementById('male-weight');
@@ -108,6 +120,8 @@ const prepFemaleBagsEl = document.getElementById('prep-female-bags');
 const prepDaysEl = document.getElementById('prep-days');
 
 const portionBtns = document.querySelectorAll('.portion-btn');
+const syncStatusEl = document.getElementById('sync-status');
+const copyShareLinkBtn = document.getElementById('copy-share-link-btn');
 
 // Macro progress indicators
 const maleCalRatio = document.getElementById('male-cal-ratio');
@@ -124,7 +138,7 @@ const femalePFill = document.getElementById('female-p-fill');
 const femaleCRatio = document.getElementById('female-c-ratio');
 const femaleCFill = document.getElementById('female-c-fill');
 
-// AI Analysis Elements
+// AI Elements
 const tabBtnPhoto = document.getElementById('tab-btn-photo');
 const tabBtnText = document.getElementById('tab-btn-text');
 const contentPhoto = document.getElementById('content-photo');
@@ -148,16 +162,60 @@ const totalAnalC = document.getElementById('total-anal-c');
 const totalAnalF = document.getElementById('total-anal-f');
 const importIngredientsBtn = document.getElementById('import-ingredients-btn');
 
-// Imported macros offset
-let importedOffset = { cal: 0, p: 0, c: 0, f: 0 };
+// Navigation Tabs
+const navTabKitchen = document.getElementById('tab-nav-kitchen');
+const navTabLog = document.getElementById('tab-nav-log');
+const navTabCharts = document.getElementById('tab-nav-charts');
+const paneKitchen = document.getElementById('pane-kitchen');
+const paneLog = document.getElementById('pane-log');
+const paneCharts = document.getElementById('pane-charts');
+
+// Log Form elements
+const logDateInput = document.getElementById('log-date');
+const weightLogForm = document.getElementById('weight-log-form');
+const foodLogForm = document.getElementById('food-log-form');
+const workoutLogForm = document.getElementById('workout-log-form');
+
+const logMaleW = document.getElementById('log-male-w');
+const logMaleF = document.getElementById('log-male-f');
+const logFemaleW = document.getElementById('log-female-w');
+const logFemaleF = document.getElementById('log-female-f');
+
+const foodLogWho = document.getElementById('food-log-who');
+const foodLogMeal = document.getElementById('food-log-meal');
+const foodLogName = document.getElementById('food-log-name');
+const foodLogCal = document.getElementById('food-log-cal');
+const foodLogP = document.getElementById('food-log-p');
+
+const workoutLogWho = document.getElementById('workout-log-who');
+const workoutLogName = document.getElementById('workout-log-name');
+const workoutLogDesc = document.getElementById('workout-log-desc');
+
+// History logs tab buttons
+const histTabFood = document.getElementById('hist-tab-food');
+const histTabWorkout = document.getElementById('hist-tab-workout');
+const histTabWeight = document.getElementById('hist-tab-weight');
+let activeHistTab = 'food';
 
 // Initialization
 function init() {
+  setDefaultDate();
   loadFromLocalStorage();
   calculateTargets();
   updateRecipes();
   setupEventListeners();
   setupAIEventListeners();
+  setupNavigation();
+  setupLogFormListeners();
+  
+  // Load cloud data from Vercel KV
+  loadSharedData();
+}
+
+// Set default date input to today
+function setDefaultDate() {
+  const today = new Date().toISOString().split('T')[0];
+  logDateInput.value = today;
 }
 
 // Setup Event Listeners
@@ -184,11 +242,15 @@ function setupEventListeners() {
       updateRecipes();
     });
   });
+
+  copyShareLinkBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(window.location.href);
+    alert('已複製共享網址！您可以發送給您的伴侶，開啟後即可實時同步健身日誌。');
+  });
 }
 
 // Setup AI Event Listeners
 function setupAIEventListeners() {
-  // Tab Switching
   tabBtnPhoto.addEventListener('click', () => {
     tabBtnPhoto.classList.add('active');
     tabBtnText.classList.remove('active');
@@ -207,7 +269,6 @@ function setupAIEventListeners() {
     activeTab = 'text';
   });
 
-  // Dropzone drag-and-drop
   dropzone.addEventListener('click', () => fileUpload.click());
 
   dropzone.addEventListener('dragover', (e) => {
@@ -241,13 +302,309 @@ function setupAIEventListeners() {
     fileUpload.value = '';
   });
 
-  // Actions
   analyzeTextBtn.addEventListener('click', analyzeText);
   analyzePhotoBtn.addEventListener('click', analyzePhoto);
-  importIngredientsBtn.addEventListener('click', importIngredientsToMacros);
+  importIngredientsBtn.addEventListener('click', importIngredientsToLogs);
 }
 
-// Handle selected file
+// Setup Navigation Pane Switching
+function setupNavigation() {
+  const tabs = [
+    { nav: navTabKitchen, pane: paneKitchen },
+    { nav: navTabLog, pane: paneLog },
+    { nav: navTabCharts, pane: paneCharts }
+  ];
+
+  tabs.forEach(tab => {
+    tab.nav.addEventListener('click', () => {
+      tabs.forEach(t => {
+        t.nav.classList.remove('active');
+        t.pane.classList.remove('active');
+      });
+      tab.nav.classList.add('active');
+      tab.pane.classList.add('active');
+      
+      // If charts tab is clicked, redraw the Chart.js canvas
+      if (tab.nav === navTabCharts) {
+        drawCharts();
+      }
+    });
+  });
+}
+
+// Setup Log Form Submissions & Tab list
+function setupLogFormListeners() {
+  weightLogForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const date = logDateInput.value;
+    const maleW = parseFloat(logMaleW.value);
+    const maleF = parseFloat(logMaleF.value);
+    const femaleW = parseFloat(logFemaleW.value);
+    const femaleF = parseFloat(logFemaleF.value);
+
+    if (maleW) {
+      // Find and update or push
+      const existing = fitnessDB.maleWeightHistory.find(h => h.date === date);
+      if (existing) {
+        existing.weight = maleW;
+        if (maleF) existing.fat = maleF;
+      } else {
+        fitnessDB.maleWeightHistory.push({ date, weight: maleW, fat: maleF || null });
+      }
+      maleWeightInput.value = maleW; // Update sidebar input
+      if (maleF) maleTargetFatInput.value = maleF;
+    }
+
+    if (femaleW) {
+      const existing = fitnessDB.femaleWeightHistory.find(h => h.date === date);
+      if (existing) {
+        existing.weight = femaleW;
+        if (femaleF) existing.fat = femaleF;
+      } else {
+        fitnessDB.femaleWeightHistory.push({ date, weight: femaleW, fat: femaleF || null });
+      }
+      femaleWeightInput.value = femaleW; // Update sidebar
+      if (femaleF) femaleTargetWeightInput.value = femaleW; // target remains or updates
+    }
+
+    // Sort histories chronologically
+    fitnessDB.maleWeightHistory.sort((a,b) => a.date.localeCompare(b.date));
+    fitnessDB.femaleWeightHistory.sort((a,b) => a.date.localeCompare(b.date));
+
+    // Reset inputs
+    logMaleW.value = '';
+    logMaleF.value = '';
+    logFemaleW.value = '';
+    logFemaleF.value = '';
+
+    calculateTargets();
+    updateRecipes();
+    saveToLocalStorage();
+    saveSharedData();
+    renderHistoryTable();
+    alert('成功記錄體重與體脂指標！');
+  });
+
+  foodLogForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const date = logDateInput.value;
+    const who = foodLogWho.value;
+    const meal = foodLogMeal.value;
+    const name = foodLogName.value.trim();
+    const cal = Math.round(parseFloat(foodLogCal.value));
+    const p = Math.round(parseFloat(foodLogP.value) * 10) / 10;
+
+    fitnessDB.foodLogs.push({ date, who, meal, name, cal, p });
+    
+    // Sort
+    fitnessDB.foodLogs.sort((a,b) => b.date.localeCompare(a.date));
+
+    // Reset
+    foodLogName.value = '';
+    foodLogCal.value = '';
+    foodLogP.value = '';
+
+    calculateTargets();
+    saveSharedData();
+    renderHistoryTable();
+    alert('飲食紀錄成功儲存！');
+  });
+
+  workoutLogForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const date = logDateInput.value;
+    const who = workoutLogWho.value;
+    const name = workoutLogName.value.trim();
+    const desc = workoutLogDesc.value.trim();
+
+    fitnessDB.workoutLogs.push({ date, who, name, desc });
+    
+    // Sort
+    fitnessDB.workoutLogs.sort((a,b) => b.date.localeCompare(a.date));
+
+    // Reset
+    workoutLogName.value = '';
+    workoutLogDesc.value = '';
+
+    saveSharedData();
+    renderHistoryTable();
+    alert('運動紀錄成功儲存！');
+  });
+
+  // History logs navigation
+  histTabFood.addEventListener('click', () => {
+    setHistoryTabActive('food');
+  });
+  histTabWorkout.addEventListener('click', () => {
+    setHistoryTabActive('workout');
+  });
+  histTabWeight.addEventListener('click', () => {
+    setHistoryTabActive('weight');
+  });
+}
+
+function setHistoryTabActive(tabName) {
+  histTabFood.classList.remove('active');
+  histTabWorkout.classList.remove('active');
+  histTabWeight.classList.remove('active');
+
+  if (tabName === 'food') histTabFood.classList.add('active');
+  if (tabName === 'workout') histTabWorkout.classList.add('active');
+  if (tabName === 'weight') histTabWeight.classList.add('active');
+
+  activeHistTab = tabName;
+  renderHistoryTable();
+}
+
+// Render the historical lists tables
+function renderHistoryTable() {
+  const head = document.getElementById('history-table-head');
+  const body = document.getElementById('history-table-body');
+  
+  head.innerHTML = '';
+  body.innerHTML = '';
+
+  if (activeHistTab === 'food') {
+    head.innerHTML = `
+      <tr>
+        <th>日期</th>
+        <th>對象</th>
+        <th>餐別</th>
+        <th>食物名稱</th>
+        <th>熱量 (kcal)</th>
+        <th>蛋白質 (g)</th>
+        <th>操作</th>
+      </tr>
+    `;
+    
+    if (fitnessDB.foodLogs.length === 0) {
+      body.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">尚無飲食記錄。</td></tr>';
+      return;
+    }
+
+    fitnessDB.foodLogs.forEach((item, index) => {
+      const tr = document.createElement('tr');
+      const whoLabel = item.who === 'both' ? '👫 雙人' : (item.who === 'male' ? '🙋‍♂️ 男生' : '🙋‍♀️ 女生');
+      tr.innerHTML = `
+        <td>${item.date}</td>
+        <td>${whoLabel}</td>
+        <td>${item.meal}</td>
+        <td><strong>${item.name}</strong></td>
+        <td>${item.cal} kcal</td>
+        <td>${item.p}g</td>
+        <td><button class="remove-btn" style="position:static; padding:0.2rem 0.5rem;" onclick="deleteLogItem('food', ${index})">🗑️ 刪除</button></td>
+      `;
+      body.appendChild(tr);
+    });
+
+  } else if (activeHistTab === 'workout') {
+    head.innerHTML = `
+      <tr>
+        <th>日期</th>
+        <th>成員</th>
+        <th>運動項目</th>
+        <th>備註 (強度/時間)</th>
+        <th>操作</th>
+      </tr>
+    `;
+    
+    if (fitnessDB.workoutLogs.length === 0) {
+      body.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">尚無運動記錄。</td></tr>';
+      return;
+    }
+
+    fitnessDB.workoutLogs.forEach((item, index) => {
+      const tr = document.createElement('tr');
+      const whoLabel = item.who === 'both' ? '👫 雙人' : (item.who === 'male' ? '🙋‍♂️ 男生' : '🙋‍♀️ 女生');
+      tr.innerHTML = `
+        <td>${item.date}</td>
+        <td>${whoLabel}</td>
+        <td><strong>${item.name}</strong></td>
+        <td>${item.desc || '-'}</td>
+        <td><button class="remove-btn" style="position:static; padding:0.2rem 0.5rem;" onclick="deleteLogItem('workout', ${index})">🗑️ 刪除</button></td>
+      `;
+      body.appendChild(tr);
+    });
+
+  } else if (activeHistTab === 'weight') {
+    head.innerHTML = `
+      <tr>
+        <th>日期</th>
+        <th>🙋‍♂️ 男生體重 (kg)</th>
+        <th>🙋‍♂️ 男生體脂 (%)</th>
+        <th>🙋‍♀️ 女生體重 (kg)</th>
+        <th>🙋‍♀️ 女生體脂 (%)</th>
+        <th>操作</th>
+      </tr>
+    `;
+
+    // Merge weight history dates
+    const allDates = Array.from(new Set([
+      ...fitnessDB.maleWeightHistory.map(h => h.date),
+      ...fitnessDB.femaleWeightHistory.map(h => h.date)
+    ])).sort((a,b) => b.localeCompare(a)); // desc
+
+    if (allDates.length === 0) {
+      body.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">尚無身體指標記錄。</td></tr>';
+      return;
+    }
+
+    allDates.forEach((date) => {
+      const maleItem = fitnessDB.maleWeightHistory.find(h => h.date === date);
+      const femaleItem = fitnessDB.femaleWeightHistory.find(h => h.date === date);
+      
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${date}</td>
+        <td>${maleItem ? maleItem.weight + ' kg' : '-'}</td>
+        <td>${maleItem && maleItem.fat ? maleItem.fat + ' %' : '-'}</td>
+        <td>${femaleItem ? femaleItem.weight + ' kg' : '-'}</td>
+        <td>${femaleItem && femaleItem.fat ? femaleItem.fat + ' %' : '-'}</td>
+        <td><button class="remove-btn" style="position:static; padding:0.2rem 0.5rem;" onclick="deleteWeightItem('${date}')">🗑️ 刪除</button></td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+}
+
+// Global scope exposed functions for delete buttons
+window.deleteLogItem = function(type, index) {
+  if (!confirm('確定要刪除此筆記錄嗎？')) return;
+  if (type === 'food') {
+    fitnessDB.foodLogs.splice(index, 1);
+  } else if (type === 'workout') {
+    fitnessDB.workoutLogs.splice(index, 1);
+  }
+  calculateTargets();
+  saveSharedData();
+  renderHistoryTable();
+};
+
+window.deleteWeightItem = function(date) {
+  if (!confirm('確定要刪除此日期的所有體重指標嗎？')) return;
+  fitnessDB.maleWeightHistory = fitnessDB.maleWeightHistory.filter(h => h.date !== date);
+  fitnessDB.femaleWeightHistory = fitnessDB.femaleWeightHistory.filter(h => h.date !== date);
+  
+  // Sync inputs back to latest weight
+  if (fitnessDB.maleWeightHistory.length > 0) {
+    const latest = fitnessDB.maleWeightHistory[fitnessDB.maleWeightHistory.length - 1];
+    maleWeightInput.value = latest.weight;
+    if (latest.fat) maleTargetFatInput.value = latest.fat;
+  }
+  if (fitnessDB.femaleWeightHistory.length > 0) {
+    const latest = fitnessDB.femaleWeightHistory[fitnessDB.femaleWeightHistory.length - 1];
+    femaleWeightInput.value = latest.weight;
+    if (latest.fat) femaleTargetWeightInput.value = latest.weight;
+  }
+
+  calculateTargets();
+  updateRecipes();
+  saveToLocalStorage();
+  saveSharedData();
+  renderHistoryTable();
+};
+
+// Handle selected image file
 function handleImageFile(file) {
   const reader = new FileReader();
   reader.onload = function(e) {
@@ -259,16 +616,16 @@ function handleImageFile(file) {
   reader.readAsDataURL(file);
 }
 
-// Calculate Goals
+// Calculate calorie goals and sum today's food logs
 function calculateTargets() {
   // Male (Mifflin-St Jeor)
   const mWeight = parseFloat(maleWeightInput.value) || 85;
   const mHeight = parseFloat(maleHeightInput.value) || 180;
   const mAge = parseFloat(maleAgeInput.value) || 30;
   const mBMR = 10 * mWeight + 6.25 * mHeight - 5 * mAge + 5;
-  const mTDEE = mBMR * 1.35; // Kettlebell + Run active factor
-  const mTargetCal = Math.round(mTDEE - 600); // Strict Fat Loss Deficit
-  const mTargetProt = Math.round(mWeight * 2.0); // Strict protein ratio
+  const mTDEE = mBMR * 1.35; 
+  const mTargetCal = Math.round(mTDEE - 600); 
+  const mTargetProt = Math.round(mWeight * 2.0); 
 
   maleTargetCalEl.textContent = mTargetCal.toLocaleString();
   maleTargetProtEl.textContent = mTargetProt;
@@ -278,14 +635,14 @@ function calculateTargets() {
   const fHeight = parseFloat(femaleHeightInput.value) || 170;
   const fAge = parseFloat(femaleAgeInput.value) || 30;
   const fBMR = 10 * fWeight + 6.25 * fHeight - 5 * fAge - 161;
-  const fTDEE = fBMR * 1.35; // Kettlebell swings active factor
-  const fTargetCal = Math.round(fTDEE - 400); // Deficit
+  const fTDEE = fBMR * 1.35; 
+  const fTargetCal = Math.round(fTDEE - 400); 
   const fTargetProt = Math.round(fWeight * 1.8);
 
   femaleTargetCalEl.textContent = fTargetCal.toLocaleString();
   femaleTargetProtEl.textContent = fTargetProt;
 
-  // Update Costco packaging calculation
+  // Costco package calculation
   const rawWeight = parseFloat(rawMeatWeightInput.value) || 3000;
   const malePortion = 250; 
   const femalePortion = 150; 
@@ -305,22 +662,43 @@ function calculateTargets() {
     prepDaysEl.textContent = `${days} 天的晚餐！`;
   }
 
-  // Update Macro Progress bars based on the One-Day Plan
-  updateMacroProgress(mTargetCal, mTargetProt, fTargetCal, fTargetProt);
+  // Calculate actual macros from shared log for "Today"
+  updateTodayProgress(mTargetCal, mTargetProt, fTargetCal, fTargetProt);
 }
 
-// Update Macro Progress indicators
-function updateMacroProgress(mCalGoal, mPGoal, fCalGoal, fPGoal) {
-  // Base daily plan macros
-  // Male: 1840 cal / 172g P / 115g C / 69g F
-  // Female: 1465 cal / 116g P / 98.5g C / 64g F
+// Sum today's logged meals and update progress bars
+function updateTodayProgress(mCalGoal, mPGoal, fCalGoal, fPGoal) {
+  const todayStr = new Date().toISOString().split('T')[0];
   
-  // Include imported offsets if any
-  const mCalAct = 1840 + importedOffset.cal;
-  const mPAct = 172 + importedOffset.p;
-  const mCAct = 115 + importedOffset.c;
-  const mCGoal = 150; 
-  
+  // Sum macros for today
+  let mCalAct = 0, mPAct = 0;
+  let fCalAct = 0, fPAct = 0;
+
+  fitnessDB.foodLogs.forEach(log => {
+    if (log.date === todayStr) {
+      if (log.who === 'male') {
+        mCalAct += log.cal;
+        mPAct += log.p;
+      } else if (log.who === 'female') {
+        fCalAct += log.cal;
+        fPAct += log.p;
+      } else if (log.who === 'both') {
+        // Shared meal: each gets half of the calories and protein
+        mCalAct += Math.round(log.cal / 2);
+        mPAct += Math.round((log.p / 2) * 10) / 10;
+        fCalAct += Math.round(log.cal / 2);
+        fPAct += Math.round((log.p / 2) * 10) / 10;
+      }
+    }
+  });
+
+  // Calculate carbs (simulated ratio based on calories from food logs)
+  // If no logs, show 0. If logs, estimate C based on 40% of calories.
+  const mCAct = Math.round((mCalAct * 0.4) / 4);
+  const fCAct = Math.round((fCalAct * 0.4) / 4);
+  const mCGoal = 150;
+  const fCGoal = 130;
+
   maleCalRatio.textContent = `${mCalAct} / ${mCalGoal} kcal`;
   maleCalFill.style.width = `${Math.min((mCalAct / mCalGoal) * 100, 100)}%`;
   malePRatio.textContent = `${mPAct} / ${mPGoal}g`;
@@ -328,11 +706,6 @@ function updateMacroProgress(mCalGoal, mPGoal, fCalGoal, fPGoal) {
   maleCRatio.textContent = `${mCAct} / ${mCGoal}g`;
   maleCFill.style.width = `${Math.min((mCAct / mCGoal) * 100, 100)}%`;
 
-  const fCalAct = 1465 + importedOffset.cal;
-  const fPAct = 116 + importedOffset.p;
-  const fCAct = 98.5 + importedOffset.c;
-  const fCGoal = 130;
-  
   femaleCalRatio.textContent = `${fCalAct} / ${fCalGoal} kcal`;
   femaleCalFill.style.width = `${Math.min((fCalAct / fCalGoal) * 100, 100)}%`;
   femalePRatio.textContent = `${fPAct} / ${fPGoal}g`;
@@ -341,7 +714,7 @@ function updateMacroProgress(mCalGoal, mPGoal, fCalGoal, fPGoal) {
   femaleCFill.style.width = `${Math.min((fCAct / fCGoal) * 100, 100)}%`;
 }
 
-// Update Interactive Recipes view based on portion mode ('both', 'male', 'female')
+// Update Interactive Recipes view based on portion mode
 function updateRecipes() {
   Object.keys(recipes).forEach(recipeKey => {
     const recipe = recipes[recipeKey];
@@ -372,17 +745,14 @@ function updateRecipes() {
   });
 }
 
-// Shared API dispatcher
+// API Call dispatcher to Vercel Serverless `/api/analyze`
 async function callAnalysisAPI({ type, imageBase64, text }) {
   const isLocalFile = window.location.protocol === 'file:';
   
-  // If running locally as a static html file, there is no Node.js backend.
-  // We throw a local fallback error to trigger simulated analysis or local regex parser
   if (isLocalFile) {
     throw new Error('LOCAL_FALLBACK');
   }
 
-  // Calls Vercel Serverless Function '/api/analyze'
   const response = await fetch('/api/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -407,12 +777,10 @@ async function analyzeText() {
   showLoading(true, "AI 文字萃取與營養計算中...");
 
   try {
-    // Try AI calling first
     parsedIngredientsList = await callAnalysisAPI({ type: 'text', text: text });
     displayAnalysisResults();
     showLoading(false);
   } catch (err) {
-    // Local offline regex/dictionary parser fallback
     console.log("AI Text Analysis failed or running offline, switching to regex parser:", err);
     setTimeout(() => {
       parsedIngredientsList = [];
@@ -501,7 +869,6 @@ async function analyzePhoto() {
     showLoading(false);
   } catch (err) {
     console.log("Photo analysis API failed, running mock simulation:", err);
-    // Simulated mock analysis fallback
     setTimeout(() => {
       parsedIngredientsList = [
         { name: "去骨雞腿肉 (Costco)", weight: 400, unit: "g", calories: 464, protein: 80, carbs: 0, fat: 16 },
@@ -547,25 +914,54 @@ function displayAnalysisResults() {
   resultsContainer.style.display = 'block';
 }
 
-// Import parsed macros into the progress bars
-function importIngredientsToMacros() {
+// Import parsed items as a shared food log entry
+function importIngredientsToLogs() {
   if (parsedIngredientsList.length === 0) return;
 
-  let totalP = 0, totalCal = 0, totalC = 0, totalF = 0;
+  const targetWho = prompt("請輸入匯入對象：\n輸入 'both' 代表雙人共餐\n輸入 'male' 代表給男生\n輸入 'female' 代表給女生", "both");
+  if (targetWho !== 'both' && targetWho !== 'male' && targetWho !== 'female') {
+    alert('輸入無效，未匯入。');
+    return;
+  }
+
+  const targetMeal = prompt("請選擇匯入餐別：\n輸入 '早餐'、'午餐'、'晚餐' 或 '點心'", "晚餐");
+  if (!['早餐', '午餐', '晚餐', '點心'].includes(targetMeal)) {
+    alert('輸入無效，未匯入。');
+    return;
+  }
+
+  const dateStr = new Date().toISOString().split('T')[0];
+
+  // Combine items to import as a single aggregate entry
+  let totalP = 0, totalCal = 0;
+  let itemsStr = "";
+
   parsedIngredientsList.forEach(item => {
     totalCal += item.calories;
     totalP += item.protein;
-    totalC += item.carbs;
-    totalF += item.fat;
+    itemsStr += `${item.name}+`;
+  });
+  itemsStr = itemsStr.slice(0, -1); // remove trailing +
+
+  fitnessDB.foodLogs.push({
+    date: dateStr,
+    who: targetWho,
+    meal: targetMeal,
+    name: `AI匯入: ${itemsStr}`,
+    cal: Math.round(totalCal),
+    p: Math.round(totalP * 10) / 10
   });
 
-  importedOffset.cal = Math.round(totalCal);
-  importedOffset.p = Math.round(totalP);
-  importedOffset.c = Math.round(totalC);
-  importedOffset.f = Math.round(totalF);
+  fitnessDB.foodLogs.sort((a,b) => b.date.localeCompare(a.date));
 
+  // Sync BMR and save
   calculateTargets();
-  alert(`成功匯入！今日攝取進度已累加該食材的營養價值。`);
+  saveSharedData();
+  renderHistoryTable();
+  
+  // Redirect user to the log tab to verify
+  navTabLog.click();
+  alert(`成功！已將 AI 解析的總計 ${Math.round(totalCal)} kcal / ${Math.round(totalP)}g 蛋白質 匯入今日 ${targetMeal} 飲食日誌。`);
 }
 
 // Toggle loading state
@@ -580,7 +976,207 @@ function showLoading(show, text = "") {
   }
 }
 
-// Local Storage helpers
+// Render dynamic charts using Chart.js
+function drawCharts() {
+  const dates = Array.from(new Set([
+    ...fitnessDB.maleWeightHistory.map(h => h.date),
+    ...fitnessDB.femaleWeightHistory.map(h => h.date)
+  ])).sort((a,b) => a.localeCompare(b)); // chronological asc
+
+  // Prepare datasets
+  const maleWeights = dates.map(d => {
+    const found = fitnessDB.maleWeightHistory.find(h => h.date === d);
+    return found ? found.weight : null;
+  });
+  
+  const femaleWeights = dates.map(d => {
+    const found = fitnessDB.femaleWeightHistory.find(h => h.date === d);
+    return found ? found.weight : null;
+  });
+
+  const maleFats = dates.map(d => {
+    const found = fitnessDB.maleWeightHistory.find(h => h.date === d);
+    return found ? found.fat : null;
+  });
+
+  const femaleFats = dates.map(d => {
+    const found = fitnessDB.femaleWeightHistory.find(h => h.date === d);
+    return found ? found.fat : null;
+  });
+
+  // Destroy previous charts to redraw
+  if (weightChartInstance) weightChartInstance.destroy();
+  if (fatChartInstance) fatChartInstance.destroy();
+
+  const ctxWeight = document.getElementById('weightChart').getContext('2d');
+  const ctxFat = document.getElementById('fatChart').getContext('2d');
+
+  // Chart configuration theme
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        labels: { color: '#f3f4f6', font: { family: 'Outfit', size: 12 } }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        ticks: { color: '#9ca3af' }
+      },
+      y: {
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        ticks: { color: '#9ca3af' }
+      }
+    }
+  };
+
+  weightChartInstance = new Chart(ctxWeight, {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: [
+        {
+          label: '🙋‍♂️ 男生體重 (kg)',
+          data: maleWeights,
+          borderColor: '#0ea5e9',
+          backgroundColor: 'rgba(14, 165, 233, 0.1)',
+          tension: 0.2,
+          spanGaps: true
+        },
+        {
+          label: '🙋‍♀️ 女生體重 (kg)',
+          data: femaleWeights,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          tension: 0.2,
+          spanGaps: true
+        }
+      ]
+    },
+    options: chartOptions
+  });
+
+  fatChartInstance = new Chart(ctxFat, {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: [
+        {
+          label: '🙋‍♂️ 男生體脂 (%)',
+          data: maleFats,
+          borderColor: '#38bdf8',
+          backgroundColor: 'rgba(56, 189, 248, 0.05)',
+          tension: 0.2,
+          spanGaps: true
+        },
+        {
+          label: '🙋‍♀️ 女生體脂 (%)',
+          data: femaleFats,
+          borderColor: '#34d399',
+          backgroundColor: 'rgba(52, 211, 153, 0.05)',
+          tension: 0.2,
+          spanGaps: true
+        }
+      ]
+    },
+    options: chartOptions
+  });
+}
+
+// Call /api/load to pull shared logs from Vercel KV
+async function loadSharedData() {
+  setSyncStatus('loading', '🔄 雲端載入中...');
+  try {
+    const isLocalFile = window.location.protocol === 'file:';
+    if (isLocalFile) {
+      throw new Error('LOCAL_OFFLINE');
+    }
+
+    const response = await fetch('/api/load');
+    if (!response.ok) throw new Error('API_LOAD_ERROR');
+    
+    const cloudData = await response.json();
+    
+    // Merge cloud data to local state
+    if (cloudData) {
+      if (cloudData.maleWeightHistory) fitnessDB.maleWeightHistory = cloudData.maleWeightHistory;
+      if (cloudData.femaleWeightHistory) fitnessDB.femaleWeightHistory = cloudData.femaleWeightHistory;
+      if (cloudData.foodLogs) fitnessDB.foodLogs = cloudData.foodLogs;
+      if (cloudData.workoutLogs) fitnessDB.workoutLogs = cloudData.workoutLogs;
+      
+      // Update BMR Inputs based on latest weight record
+      if (fitnessDB.maleWeightHistory.length > 0) {
+        const latest = fitnessDB.maleWeightHistory[fitnessDB.maleWeightHistory.length - 1];
+        maleWeightInput.value = latest.weight;
+        if (latest.fat) maleTargetFatInput.value = latest.fat;
+      }
+      if (fitnessDB.femaleWeightHistory.length > 0) {
+        const latest = fitnessDB.femaleWeightHistory[fitnessDB.femaleWeightHistory.length - 1];
+        femaleWeightInput.value = latest.weight;
+        if (latest.fat) femaleTargetWeightInput.value = latest.weight;
+      }
+    }
+
+    setSyncStatus('synced', '☁️ 雲端已同步');
+  } catch (err) {
+    console.warn("Could not load from Vercel KV database, using local storage fallback:", err);
+    setSyncStatus('error', '⚠️ 離線本地模式');
+    
+    // Load local backup from LocalStorage
+    const localBackup = localStorage.getItem('costco_fitness_db_backup');
+    if (localBackup) {
+      try {
+        fitnessDB = JSON.parse(localBackup);
+      } catch(e) {}
+    }
+  }
+
+  // Draw logs list and update calculations
+  calculateTargets();
+  renderHistoryTable();
+}
+
+// Call /api/save to push updates to Vercel KV
+async function saveSharedData() {
+  // Save local backup
+  localStorage.setItem('costco_fitness_db_backup', JSON.stringify(fitnessDB));
+  
+  setSyncStatus('loading', '🔄 雲端儲存中...');
+  try {
+    const isLocalFile = window.location.protocol === 'file:';
+    if (isLocalFile) {
+      throw new Error('LOCAL_OFFLINE');
+    }
+
+    const response = await fetch('/api/save', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(fitnessDB)
+    });
+
+    if (!response.ok) throw new Error('API_SAVE_ERROR');
+    setSyncStatus('synced', '☁️ 雲端已同步');
+  } catch (err) {
+    console.warn("Could not write to Vercel KV database:", err);
+    setSyncStatus('error', '⚠️ 未同步到雲端');
+  }
+}
+
+// Set status indicator state
+function setSyncStatus(state, text) {
+  syncStatusEl.className = 'sync-status-indicator';
+  syncStatusEl.textContent = text;
+  
+  if (state === 'synced') {
+    syncStatusEl.classList.add('synced');
+  }
+}
+
+// Local Settings storage
 function saveToLocalStorage() {
   const settings = {
     maleWeight: maleWeightInput.value,
