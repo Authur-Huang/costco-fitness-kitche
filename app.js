@@ -864,6 +864,18 @@ async function analyzePhoto() {
   }
 }
 
+// Toggle display of loading spinner and results placeholder
+function showLoading(show, text = "") {
+  if (show) {
+    aiStatusText.textContent = text;
+    aiLoading.style.display = 'flex';
+    resultPlaceholder.style.display = 'none';
+    resultsContainer.style.display = 'none';
+  } else {
+    aiLoading.style.display = 'none';
+  }
+}
+
 // Display results in the table
 function displayAnalysisResults() {
   analysisTableBody.innerHTML = '';
