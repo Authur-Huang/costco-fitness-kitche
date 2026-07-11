@@ -82,24 +82,12 @@ body {
   letter-spacing: 0.05em;
 }
 
-/* Layout */
-.dashboard-layout {
+/* Layout: profile settings grid (Tab 5) */
+.profile-grid {
   display: grid;
-  grid-template-columns: 350px 1fr;
-  gap: 2rem;
-}
-
-@media (max-width: 1024px) {
-  .dashboard-layout {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Sidebar Styling */
-.sidebar {
-  display: flex;
-  flex-direction: column;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1.5rem;
+  align-items: start;
 }
 
 .profile-card {
@@ -1312,6 +1300,10 @@ textarea#text-input:focus {
   .nav-tab.active::after {
     display: none;
   }
+  /* 5th tab (profile settings) spans the full row */
+  .main-nav .nav-tab:nth-child(5) {
+    grid-column: 1 / -1;
+  }
 
   /* --- Sections: tighter padding, smaller headings --- */
   .overview-section, .recipes-section, .ai-analysis-section, .log-section {
@@ -1343,7 +1335,7 @@ textarea#text-input:focus {
     width: 100%;
     min-width: 0;
   }
-  .dashboard-layout > *, .ai-grid > *, .log-split-grid > *,
+  .profile-grid > *, .ai-grid > *, .log-split-grid > *,
   .inventory-split-grid > *, .macro-charts > *, .charts-grid > *,
   .form-group, .form-group-row > *, .ai-settings-grid > * {
     min-width: 0;

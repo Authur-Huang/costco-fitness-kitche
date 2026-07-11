@@ -244,10 +244,12 @@ const navTabKitchen = document.getElementById('tab-nav-kitchen');
 const navTabRecipes = document.getElementById('tab-nav-recipes');
 const navTabLog = document.getElementById('tab-nav-log');
 const navTabCharts = document.getElementById('tab-nav-charts');
+const navTabProfile = document.getElementById('tab-nav-profile');
 const paneKitchen = document.getElementById('pane-kitchen');
 const paneRecipes = document.getElementById('pane-recipes');
 const paneLog = document.getElementById('pane-log');
 const paneCharts = document.getElementById('pane-charts');
+const paneProfile = document.getElementById('pane-profile');
 
 // Inventory Elements
 const inventoryList = document.getElementById('inventory-list');
@@ -435,7 +437,8 @@ function setupNavigation() {
     { nav: navTabKitchen, pane: paneKitchen },
     { nav: navTabRecipes, pane: paneRecipes },
     { nav: navTabLog, pane: paneLog },
-    { nav: navTabCharts, pane: paneCharts }
+    { nav: navTabCharts, pane: paneCharts },
+    { nav: navTabProfile, pane: paneProfile }
   ];
 
   tabs.forEach(tab => {

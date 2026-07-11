@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Global Error Logger -->
@@ -42,83 +42,12 @@
         <button class="nav-tab" id="tab-nav-recipes">📖 智慧食譜與庫存</button>
         <button class="nav-tab" id="tab-nav-log">📝 雙人每日日誌</button>
         <button class="nav-tab" id="tab-nav-charts">📈 減脂歷史趨勢圖</button>
+        <button class="nav-tab" id="tab-nav-profile">👤 個人設定</button>
       </nav>
     </header>
 
-    <div class="dashboard-layout">
-      <!-- Sidebar Settings -->
-      <aside class="sidebar">
-        <!-- Profile Card 1: Male -->
-        <div class="profile-card male-card">
-          <div class="profile-header">
-            <span class="avatar">🙋‍♂️</span>
-            <h3>男生 (減脂控糖)</h3>
-          </div>
-          <div class="profile-inputs">
-            <div class="input-group">
-              <label for="male-weight">體重 (kg)</label>
-              <input type="number" id="male-weight" value="85" min="40" max="150" step="0.1">
-            </div>
-            <div class="input-group">
-              <label for="male-height">身高 (cm)</label>
-              <input type="number" id="male-height" value="180" min="120" max="220">
-            </div>
-            <div class="input-group">
-              <label for="male-age">年齡 (歲)</label>
-              <input type="number" id="male-age" value="30" min="15" max="100">
-            </div>
-            <div class="input-group">
-              <label for="male-target-fat">目標體脂 (%)</label>
-              <input type="number" id="male-target-fat" value="15" min="5" max="40">
-            </div>
-          </div>
-          <div class="macro-badge">
-            目標熱量: <span id="male-target-calories">1,840</span> kcal / 蛋白質: <span id="male-target-protein">170</span>g
-          </div>
-        </div>
-
-        <!-- Profile Card 2: Female -->
-        <div class="profile-card female-card">
-          <div class="profile-header">
-            <span class="avatar">🙋‍♀️</span>
-            <h3>女生 (減脂控糖)</h3>
-          </div>
-          <div class="profile-inputs">
-            <div class="input-group">
-              <label for="female-weight">體重 (kg)</label>
-              <input type="number" id="female-weight" value="67" min="30" max="120" step="0.1">
-            </div>
-            <div class="input-group">
-              <label for="female-height">身高 (cm)</label>
-              <input type="number" id="female-height" value="170" min="120" max="220">
-            </div>
-            <div class="input-group">
-              <label for="female-age">年齡 (歲)</label>
-              <input type="number" id="female-age" value="30" min="15" max="100">
-            </div>
-            <div class="input-group">
-              <label for="female-target-weight">目標體重 (kg)</label>
-              <input type="number" id="female-target-weight" value="60" min="30" max="100">
-            </div>
-          </div>
-          <div class="macro-badge">
-            目標熱量: <span id="female-target-calories">1,465</span> kcal / 蛋白質: <span id="female-target-protein">116</span>g
-          </div>
-        </div>
-        <!-- Shared Sync Settings Card -->
-        <div class="costco-box sync-settings-box">
-          <h3>🔗 雙人同步設定</h3>
-          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
-            使用此連結在伴侶的手機開啟，即可共享實時數據！
-          </p>
-          <button class="ai-action-btn primary" id="copy-share-link-btn" style="font-size: 0.8rem; padding: 0.5rem;">
-            📋 複製雙人共享網址
-          </button>
-        </div>
-      </aside>
-
-      <!-- Main Content -->
-      <main class="main-panel">
+    <!-- Main Content -->
+    <main class="main-panel">
         
         <!-- Tab 1: Kitchen & AI Prep -->
         <div class="tab-pane active" id="pane-kitchen">
@@ -673,11 +602,89 @@
             </div>
           </section>
         </div>
-      </main>
-    </div>
+
+        <!-- Tab 5: Profile & Sync Settings -->
+        <div class="tab-pane" id="pane-profile">
+          <section class="log-section">
+            <h2>👤 個人資料與目標設定</h2>
+            <p class="section-desc">此處的體重、身高、年齡會用於基礎代謝率 (BMR) 與運動熱量的自動計算；體重會隨每日登錄自動更新。</p>
+
+            <div class="profile-grid">
+              <!-- Profile Card 1: Male -->
+              <div class="profile-card male-card">
+                <div class="profile-header">
+                  <span class="avatar">🙋‍♂️</span>
+                  <h3>男生 (減脂控糖)</h3>
+                </div>
+                <div class="profile-inputs">
+                  <div class="input-group">
+                    <label for="male-weight">體重 (kg)</label>
+                    <input type="number" id="male-weight" value="85" min="40" max="150" step="0.1">
+                  </div>
+                  <div class="input-group">
+                    <label for="male-height">身高 (cm)</label>
+                    <input type="number" id="male-height" value="180" min="120" max="220">
+                  </div>
+                  <div class="input-group">
+                    <label for="male-age">年齡 (歲)</label>
+                    <input type="number" id="male-age" value="30" min="15" max="100">
+                  </div>
+                  <div class="input-group">
+                    <label for="male-target-fat">目標體脂 (%)</label>
+                    <input type="number" id="male-target-fat" value="15" min="5" max="40">
+                  </div>
+                </div>
+                <div class="macro-badge">
+                  目標熱量: <span id="male-target-calories">1,840</span> kcal / 蛋白質: <span id="male-target-protein">170</span>g
+                </div>
+              </div>
+
+              <!-- Profile Card 2: Female -->
+              <div class="profile-card female-card">
+                <div class="profile-header">
+                  <span class="avatar">🙋‍♀️</span>
+                  <h3>女生 (減脂控糖)</h3>
+                </div>
+                <div class="profile-inputs">
+                  <div class="input-group">
+                    <label for="female-weight">體重 (kg)</label>
+                    <input type="number" id="female-weight" value="67" min="30" max="120" step="0.1">
+                  </div>
+                  <div class="input-group">
+                    <label for="female-height">身高 (cm)</label>
+                    <input type="number" id="female-height" value="170" min="120" max="220">
+                  </div>
+                  <div class="input-group">
+                    <label for="female-age">年齡 (歲)</label>
+                    <input type="number" id="female-age" value="30" min="15" max="100">
+                  </div>
+                  <div class="input-group">
+                    <label for="female-target-weight">目標體重 (kg)</label>
+                    <input type="number" id="female-target-weight" value="60" min="30" max="100">
+                  </div>
+                </div>
+                <div class="macro-badge">
+                  目標熱量: <span id="female-target-calories">1,465</span> kcal / 蛋白質: <span id="female-target-protein">116</span>g
+                </div>
+              </div>
+
+              <!-- Shared Sync Settings Card -->
+              <div class="costco-box sync-settings-box">
+                <h3>🔗 雙人同步設定</h3>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                  使用此連結在伴侶的手機開啟，即可共享實時數據！
+                </p>
+                <button class="ai-action-btn primary" id="copy-share-link-btn" style="font-size: 0.8rem; padding: 0.5rem;">
+                  📋 複製雙人共享網址
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+    </main>
   </div>
 
   <!-- JavaScript logic -->
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
