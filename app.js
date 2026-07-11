@@ -178,6 +178,7 @@ const totalAnalC = document.getElementById('total-anal-c');
 const totalAnalF = document.getElementById('total-anal-f');
 const importIngredientsBtn = document.getElementById('import-ingredients-btn');
 const aiTargetWho = document.getElementById('ai-target-who');
+const imageOverlayContainer = document.getElementById('image-overlay-container');
 
 // Navigation Tabs
 const navTabKitchen = document.getElementById('tab-nav-kitchen');
@@ -876,10 +877,10 @@ async function analyzePhoto() {
     console.log("Photo analysis API failed, running mock simulation:", err);
     setTimeout(() => {
       parsedIngredientsList = [
-        { name: "去骨雞腿肉 (Costco)", weight: 400, unit: "g", calories: 464, protein: 80, carbs: 0, fat: 16 },
-        { name: "義美板豆腐", weight: 300, unit: "g", calories: 240, protein: 24, carbs: 6, fat: 13.5 },
-        { name: "新鮮雞蛋", weight: 3, unit: "顆", calories: 225, protein: 19.5, carbs: 1.5, fat: 15 },
-        { name: "冷凍毛豆仁 (Costco)", weight: 150, unit: "g", calories: 180, protein: 16.5, carbs: 15, fat: 7.5 }
+        { name: "去骨雞腿肉 (Costco)", weight: 400, unit: "g", calories: 464, protein: 80, carbs: 0, fat: 16, box_2d: [150, 100, 500, 600] },
+        { name: "義美板豆腐", weight: 300, unit: "g", calories: 240, protein: 24, carbs: 6, fat: 13.5, box_2d: [150, 550, 450, 830] },
+        { name: "新鮮雞蛋", weight: 3, unit: "顆", calories: 225, protein: 19.5, carbs: 1.5, fat: 15, box_2d: [480, 500, 900, 820] },
+        { name: "冷凍毛豆仁 (Costco)", weight: 150, unit: "g", calories: 180, protein: 16.5, carbs: 15, fat: 7.5, box_2d: [400, 100, 800, 450] }
       ];
       displayAnalysisResults();
       showLoading(false);
@@ -906,23 +907,27 @@ function displayAnalysisResults() {
   if (parsedIngredientsList.length === 0) {
     resultsContainer.style.display = 'none';
     resultPlaceholder.style.display = 'block';
+    if (imageOverlayContainer) imageOverlayContainer.innerHTML = '';
     return;
   }
 
   parsedIngredientsList.forEach((item, index) => {
     const tr = document.createElement('tr');
+    tr.setAttribute('onmouseenter', `highlightIngredientBox(${index})`);
+    tr.setAttribute('onmouseleave', 'clearIngredientHighlight()');
+    
     tr.innerHTML = `
-      <td><input type="text" class="inline-edit-input" style="min-width: 120px; width: 100%;" value="${item.name}" onchange="updateAiIngredient(${index}, 'name', this.value)"></td>
+      <td><input type="text" class="inline-edit-input" style="min-width: 120px; width: 100%;" value="${item.name}" onfocus="highlightIngredientBox(${index})" onblur="clearIngredientHighlight()" onchange="updateAiIngredient(${index}, 'name', this.value)"></td>
       <td>
         <div style="display:flex; gap:0.25rem; align-items:center;">
-          <input type="number" class="inline-edit-input" style="width:60px;" value="${item.weight}" onchange="updateAiIngredient(${index}, 'weight', parseFloat(this.value) || 0)">
+          <input type="number" class="inline-edit-input" style="width:60px;" value="${item.weight}" onfocus="highlightIngredientBox(${index})" onblur="clearIngredientHighlight()" onchange="updateAiIngredient(${index}, 'weight', parseFloat(this.value) || 0)">
           <span style="font-size:0.75rem; color:var(--text-muted);">${item.unit || 'g'}</span>
         </div>
       </td>
-      <td><input type="number" class="inline-edit-input" style="width:60px;" value="${item.calories}" onchange="updateAiIngredient(${index}, 'calories', parseFloat(this.value) || 0)"></td>
-      <td><input type="number" class="inline-edit-input" style="width:50px;" value="${item.protein}" onchange="updateAiIngredient(${index}, 'protein', parseFloat(this.value) || 0)"></td>
-      <td><input type="number" class="inline-edit-input" style="width:50px;" value="${item.carbs}" onchange="updateAiIngredient(${index}, 'carbs', parseFloat(this.value) || 0)"></td>
-      <td><input type="number" class="inline-edit-input" style="width:50px;" value="${item.fat}" onchange="updateAiIngredient(${index}, 'fat', parseFloat(this.value) || 0)"></td>
+      <td><input type="number" class="inline-edit-input" style="width:60px;" value="${item.calories}" onfocus="highlightIngredientBox(${index})" onblur="clearIngredientHighlight()" onchange="updateAiIngredient(${index}, 'calories', parseFloat(this.value) || 0)"></td>
+      <td><input type="number" class="inline-edit-input" style="width:50px;" value="${item.protein}" onfocus="highlightIngredientBox(${index})" onblur="clearIngredientHighlight()" onchange="updateAiIngredient(${index}, 'protein', parseFloat(this.value) || 0)"></td>
+      <td><input type="number" class="inline-edit-input" style="width:50px;" value="${item.carbs}" onfocus="highlightIngredientBox(${index})" onblur="clearIngredientHighlight()" onchange="updateAiIngredient(${index}, 'carbs', parseFloat(this.value) || 0)"></td>
+      <td><input type="number" class="inline-edit-input" style="width:50px;" value="${item.fat}" onfocus="highlightIngredientBox(${index})" onblur="clearIngredientHighlight()" onchange="updateAiIngredient(${index}, 'fat', parseFloat(this.value) || 0)"></td>
       <td><button class="remove-btn" style="position:static; padding:0.25rem 0.5rem; font-size:0.75rem;" onclick="deleteAiIngredient(${index})">🗑️ 刪除</button></td>
     `;
     analysisTableBody.appendChild(tr);
@@ -932,6 +937,39 @@ function displayAnalysisResults() {
   resultPlaceholder.style.display = 'none';
   resultsContainer.style.display = 'block';
 }
+
+window.highlightIngredientBox = function(index) {
+  if (!imageOverlayContainer) return;
+  imageOverlayContainer.innerHTML = '';
+  
+  const item = parsedIngredientsList[index];
+  if (item && item.box_2d && Array.isArray(item.box_2d) && item.box_2d.length === 4) {
+    const [ymin, xmin, ymax, xmax] = item.box_2d;
+    
+    const box = document.createElement('div');
+    box.className = 'bounding-box-highlight';
+    
+    // Position using percentages (responsive to container dimensions)
+    box.style.top = `${ymin / 10}%`;
+    box.style.left = `${xmin / 10}%`;
+    box.style.width = `${(xmax - xmin) / 10}%`;
+    box.style.height = `${(ymax - ymin) / 10}%`;
+    
+    // Add Label
+    const label = document.createElement('span');
+    label.className = 'box-label';
+    label.textContent = item.name;
+    box.appendChild(label);
+    
+    imageOverlayContainer.appendChild(box);
+  }
+};
+
+window.clearIngredientHighlight = function() {
+  if (imageOverlayContainer) {
+    imageOverlayContainer.innerHTML = '';
+  }
+};
 
 window.updateAiIngredient = function(index, field, value) {
   if (parsedIngredientsList[index]) {
