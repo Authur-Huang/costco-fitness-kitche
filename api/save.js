@@ -17,8 +17,8 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const kvUrl = process.env.KV_REST_API_URL;
-  const kvToken = process.env.KV_REST_API_TOKEN;
+  const kvUrl = process.env.KV_REST_API_URL || process.env.STORAGE_REST_API_URL;
+  const kvToken = process.env.KV_REST_API_TOKEN || process.env.STORAGE_REST_API_TOKEN;
 
   if (!kvUrl || !kvToken) {
     return res.status(500).json({ error: 'Vercel KV is not connected. Please create and connect KV database in Vercel Storage settings.' });
