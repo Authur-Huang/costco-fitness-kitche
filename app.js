@@ -125,7 +125,6 @@ const femaleCRatio = document.getElementById('female-c-ratio');
 const femaleCFill = document.getElementById('female-c-fill');
 
 // AI Analysis Elements
-const geminiKeyInput = document.getElementById('gemini-key');
 const tabBtnPhoto = document.getElementById('tab-btn-photo');
 const tabBtnText = document.getElementById('tab-btn-text');
 const contentPhoto = document.getElementById('content-photo');
@@ -159,23 +158,6 @@ function init() {
   updateRecipes();
   setupEventListeners();
   setupAIEventListeners();
-  checkEnvironment();
-}
-
-// Check environment (Hide API Key field if deployed on Vercel)
-function checkEnvironment() {
-  const isLocalFile = window.location.protocol === 'file:';
-  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  
-  if (!isLocalFile && !isLocalhost) {
-    // We are hosted on Vercel/GitHub Pages. 
-    // We can inform that Vercel uses server-side key.
-    const keyLabel = document.querySelector('.api-key-group label');
-    if (keyLabel) {
-      keyLabel.innerHTML = '🔑 Gemini API 金鑰 <span style="color:#10b981; font-size:0.75rem;">(已由 Vercel 後端安全託管，免輸入！)</span>';
-      geminiKeyInput.placeholder = '如有需要可輸入個人 Key 覆寫後端金鑰';
-    }
-  }
 }
 
 // Setup Event Listeners
@@ -263,10 +245,6 @@ function setupAIEventListeners() {
   analyzeTextBtn.addEventListener('click', analyzeText);
   analyzePhotoBtn.addEventListener('click', analyzePhoto);
   importIngredientsBtn.addEventListener('click', importIngredientsToMacros);
-
-  geminiKeyInput.addEventListener('change', () => {
-    localStorage.setItem('costco_gemini_key', geminiKeyInput.value);
-  });
 }
 
 // Handle selected file
@@ -396,68 +374,15 @@ function updateRecipes() {
 
 // Shared API dispatcher
 async function callAnalysisAPI({ type, imageBase64, text }) {
-  const apiKey = geminiKeyInput.value.trim() || localStorage.getItem('costco_gemini_key');
   const isLocalFile = window.location.protocol === 'file:';
   
-  // If running locally on file:// without a key, fallback to local simulator / regex
-  if (isLocalFile && !apiKey) {
+  // If running locally as a static html file, there is no Node.js backend.
+  // We throw a local fallback error to trigger simulated analysis or local regex parser
+  if (isLocalFile) {
     throw new Error('LOCAL_FALLBACK');
   }
 
-  // Case A: User has a local key. Call Google directly (saves serverless request and works offline/locally)
-  if (apiKey) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-    let prompt = "";
-    let contents = [];
-
-    if (type === 'photo') {
-      prompt = `請分析這張照片中的食材（主要是 Costco 購買的健身增肌減脂食材，例如去骨雞腿肉、豬五花、毛豆、豆腐、雞蛋、蔬菜等）。
-請辨識出食材的名稱、估計克數（如果是雞蛋、盒裝豆腐等單位，可以用顆或盒，但盡量提供換算克數）。
-請估算出卡路里(calories), 蛋白質(protein), 碳水化合物(carbs)與脂肪(fat)含量。
-你必須只回覆一個 JSON 格式的陣列，且不要用 markdown (\`\`\`json) 標記。格式範例如下：
-[
-  {"name": "去骨雞腿肉", "weight": 400, "unit": "g", "calories": 464, "protein": 80.0, "carbs": 0.0, "fat": 16.0},
-  {"name": "雞蛋", "weight": 3, "unit": "顆", "calories": 225, "protein": 19.5, "carbs": 1.5, "fat": 15.0}
-]`;
-      contents = [{
-        parts: [
-          { text: prompt },
-          { inlineData: { mimeType: "image/jpeg", data: imageBase64 } }
-        ]
-      }];
-    } else {
-      prompt = `請分析以下這段食材清單文字，針對增肌減脂營養進行解析，提取出各個食材的名稱與估計重量（克數），並估算出其卡路里(calories)、蛋白質(protein)、碳水化合物(carbs)與脂肪(fat)含量。
-你必須只回覆一個 JSON 格式的陣列，且不要用 markdown (\`\`\`json) 標記。格式範例如下：
-[
-  {"name": "去骨雞腿肉", "weight": 400, "unit": "g", "calories": 464, "protein": 80.0, "carbs": 0.0, "fat": 16.0}
-]
-食材清單文字：
-${text}`;
-      contents = [{
-        parts: [
-          { text: prompt }
-        ]
-      }];
-    }
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents })
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Google API returned status ${response.status}: ${errText}`);
-    }
-
-    const data = await response.json();
-    const resultText = data.candidates[0].content.parts[0].text.trim();
-    const cleanedJson = resultText.replace(/```json/g, "").replace(/```/g, "").trim();
-    return JSON.parse(cleanedJson);
-  }
-
-  // Case B: No local key, but we are running on Vercel serverless host. Call '/api/analyze'
+  // Calls Vercel Serverless Function '/api/analyze'
   const response = await fetch('/api/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -465,7 +390,7 @@ ${text}`;
   });
 
   if (!response.ok) {
-    throw new Error('SERVERLESS_FALLBACK_FAILED');
+    throw new Error('SERVERLESS_API_FAILED');
   }
 
   return await response.json();
@@ -576,7 +501,7 @@ async function analyzePhoto() {
     showLoading(false);
   } catch (err) {
     console.log("Photo analysis API failed, running mock simulation:", err);
-    // Simulated mock analysis
+    // Simulated mock analysis fallback
     setTimeout(() => {
       parsedIngredientsList = [
         { name: "去骨雞腿肉 (Costco)", weight: 400, unit: "g", calories: 464, protein: 80, carbs: 0, fat: 16 },
@@ -699,11 +624,6 @@ function loadFromLocalStorage() {
     } catch (e) {
       console.error('Error loading settings', e);
     }
-  }
-
-  const savedKey = localStorage.getItem('costco_gemini_key');
-  if (savedKey) {
-    geminiKeyInput.value = savedKey;
   }
 }
 
