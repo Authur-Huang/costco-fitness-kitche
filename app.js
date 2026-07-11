@@ -56,8 +56,34 @@ const recipes = {
   }
 };
 
+// Ingredients Nutrition Lookup Database
+const nutritionDB = {
+  "雞腿肉": { cal: 116, p: 20, c: 0, f: 4, unit: "g" },
+  "去骨雞腿肉": { cal: 116, p: 20, c: 0, f: 4, unit: "g" },
+  "雞胸肉": { cal: 110, p: 23, c: 0, f: 1.5, unit: "g" },
+  "豬五花": { cal: 368, p: 17, c: 0, f: 33, unit: "g" },
+  "五花肉": { cal: 368, p: 17, c: 0, f: 33, unit: "g" },
+  "豬絞肉": { cal: 230, p: 18, c: 0, f: 17, unit: "g" },
+  "絞肉": { cal: 230, p: 18, c: 0, f: 17, unit: "g" },
+  "豆腐": { cal: 80, p: 8, c: 2, f: 4.5, unit: "g" },
+  "板豆腐": { cal: 80, p: 8, c: 2, f: 4.5, unit: "g" },
+  "雞蛋": { cal: 75, p: 6.5, c: 0.5, f: 5, unit: "顆" },
+  "蛋": { cal: 75, p: 6.5, c: 0.5, f: 5, unit: "顆" },
+  "毛豆": { cal: 120, p: 11, c: 10, f: 5, unit: "g" },
+  "毛豆仁": { cal: 120, p: 11, c: 10, f: 5, unit: "g" },
+  "杏鮑菇": { cal: 35, p: 2.5, c: 6, f: 0.2, unit: "g" },
+  "花椰菜": { cal: 34, p: 3, c: 7, f: 0.3, unit: "g" },
+  "紅蘿蔔": { cal: 41, p: 1, c: 10, f: 0.2, unit: "g" },
+  "洋蔥": { cal: 40, p: 1.1, c: 9.3, f: 0.1, unit: "g" },
+  "麥片": { cal: 380, p: 13, c: 67, f: 7, unit: "g" },
+  "燕麥片": { cal: 380, p: 13, c: 67, f: 7, unit: "g" }
+};
+
 // Current Portion Mode ('both', 'male', 'female')
 let currentMode = 'both';
+let activeTab = 'photo';
+let uploadedImageBase64 = null;
+let parsedIngredientsList = [];
 
 // DOM Elements
 const maleWeightInput = document.getElementById('male-weight');
@@ -98,12 +124,41 @@ const femalePFill = document.getElementById('female-p-fill');
 const femaleCRatio = document.getElementById('female-c-ratio');
 const femaleCFill = document.getElementById('female-c-fill');
 
+// AI Analysis Elements
+const geminiKeyInput = document.getElementById('gemini-key');
+const tabBtnPhoto = document.getElementById('tab-btn-photo');
+const tabBtnText = document.getElementById('tab-btn-text');
+const contentPhoto = document.getElementById('content-photo');
+const contentText = document.getElementById('content-text');
+const dropzone = document.getElementById('dropzone');
+const fileUpload = document.getElementById('file-upload');
+const imagePreviewContainer = document.getElementById('image-preview-container');
+const imagePreview = document.getElementById('image-preview');
+const removeImgBtn = document.getElementById('remove-img-btn');
+const textInput = document.getElementById('text-input');
+const analyzeTextBtn = document.getElementById('analyze-text-btn');
+const analyzePhotoBtn = document.getElementById('analyze-photo-btn');
+const aiLoading = document.getElementById('ai-loading');
+const aiStatusText = document.getElementById('ai-status-text');
+const resultPlaceholder = document.getElementById('result-placeholder');
+const resultsContainer = document.getElementById('results-container');
+const analysisTableBody = document.getElementById('analysis-table-body');
+const totalAnalCal = document.getElementById('total-anal-cal');
+const totalAnalP = document.getElementById('total-anal-p');
+const totalAnalC = document.getElementById('total-anal-c');
+const totalAnalF = document.getElementById('total-anal-f');
+const importIngredientsBtn = document.getElementById('import-ingredients-btn');
+
+// Imported macros offset
+let importedOffset = { cal: 0, p: 0, c: 0, f: 0 };
+
 // Initialization
 function init() {
   loadFromLocalStorage();
   calculateTargets();
   updateRecipes();
   setupEventListeners();
+  setupAIEventListeners();
 }
 
 // Setup Event Listeners
@@ -132,6 +187,83 @@ function setupEventListeners() {
   });
 }
 
+// Setup AI Event Listeners
+function setupAIEventListeners() {
+  // Tab Switching
+  tabBtnPhoto.addEventListener('click', () => {
+    tabBtnPhoto.classList.add('active');
+    tabBtnText.classList.remove('active');
+    contentPhoto.classList.add('active');
+    contentText.classList.remove('active');
+    analyzePhotoBtn.style.display = 'flex';
+    activeTab = 'photo';
+  });
+
+  tabBtnText.addEventListener('click', () => {
+    tabBtnText.classList.add('active');
+    tabBtnPhoto.classList.remove('active');
+    contentText.classList.add('active');
+    contentPhoto.classList.remove('active');
+    analyzePhotoBtn.style.display = 'none';
+    activeTab = 'text';
+  });
+
+  // Dropzone drag-and-drop
+  dropzone.addEventListener('click', () => fileUpload.click());
+
+  dropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('dragover');
+  });
+
+  dropzone.addEventListener('dragleave', () => {
+    dropzone.classList.remove('dragover');
+  });
+
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    if (e.dataTransfer.files.length > 0) {
+      handleImageFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  fileUpload.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+      handleImageFile(e.target.files[0]);
+    }
+  });
+
+  removeImgBtn.addEventListener('click', () => {
+    uploadedImageBase64 = null;
+    imagePreview.src = '';
+    imagePreviewContainer.style.display = 'none';
+    dropzone.style.display = 'block';
+    fileUpload.value = '';
+  });
+
+  // Actions
+  analyzeTextBtn.addEventListener('click', analyzeText);
+  analyzePhotoBtn.addEventListener('click', analyzePhoto);
+  importIngredientsBtn.addEventListener('click', importIngredientsToMacros);
+
+  geminiKeyInput.addEventListener('change', () => {
+    localStorage.setItem('costco_gemini_key', geminiKeyInput.value);
+  });
+}
+
+// Handle selected file
+function handleImageFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    uploadedImageBase64 = e.target.result.split(',')[1];
+    imagePreview.src = e.target.result;
+    dropzone.style.display = 'none';
+    imagePreviewContainer.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
 // Calculate Goals
 function calculateTargets() {
   // Male (Mifflin-St Jeor)
@@ -158,10 +290,10 @@ function calculateTargets() {
   femaleTargetCalEl.textContent = fTargetCal.toLocaleString();
   femaleTargetProtEl.textContent = fTargetProt;
 
-  // Update Costco packaging calculation (e.g. for chicken)
+  // Update Costco packaging calculation
   const rawWeight = parseFloat(rawMeatWeightInput.value) || 3000;
-  const malePortion = 250; // default dinner raw chicken weight
-  const femalePortion = 150; // default dinner raw chicken weight
+  const malePortion = 250; 
+  const femalePortion = 150; 
   const combinedPortion = malePortion + femalePortion;
   
   const days = Math.floor(rawWeight / combinedPortion);
@@ -184,13 +316,15 @@ function calculateTargets() {
 
 // Update Macro Progress indicators
 function updateMacroProgress(mCalGoal, mPGoal, fCalGoal, fPGoal) {
-  // Plan macros (from table)
-  // Male: Breakfast (500 cal / 50g P / 50g C / 13g F) + Lunch (550 cal / 28g P / 45g C / 19g F) + Dinner (670 cal / 70g P / 18g C / 35.5g F) + Whey (120 cal / 24g P / 2g C / 1.5g F)
-  // Total: 1840 kcal / 172g P / 115g C / 69g F
-  const mCalAct = 1840;
-  const mPAct = 172;
-  const mCAct = 115;
-  const mCGoal = 150; // Target carb
+  // Base daily plan macros
+  // Male: 1840 cal / 172g P / 115g C / 69g F
+  // Female: 1465 cal / 116g P / 98.5g C / 64g F
+  
+  // Include imported offsets if any
+  const mCalAct = 1840 + importedOffset.cal;
+  const mPAct = 172 + importedOffset.p;
+  const mCAct = 115 + importedOffset.c;
+  const mCGoal = 150; 
   
   maleCalRatio.textContent = `${mCalAct} / ${mCalGoal} kcal`;
   maleCalFill.style.width = `${Math.min((mCalAct / mCalGoal) * 100, 100)}%`;
@@ -199,11 +333,9 @@ function updateMacroProgress(mCalGoal, mPGoal, fCalGoal, fPGoal) {
   maleCRatio.textContent = `${mCAct} / ${mCGoal}g`;
   maleCFill.style.width = `${Math.min((mCAct / mCGoal) * 100, 100)}%`;
 
-  // Female: Breakfast (450 cal / 38g P / 47g C / 12.5g F) + Lunch (420 cal / 21g P / 36g C / 18g F) + Dinner (520 cal / 50g P / 15g C / 28.5g F) + Snack Egg (75 cal / 7g P / 0.5g C / 5g F)
-  // Total: 1465 kcal / 116g P / 98.5g C / 64g F
-  const fCalAct = 1465;
-  const fPAct = 116;
-  const fCAct = 98.5;
+  const fCalAct = 1465 + importedOffset.cal;
+  const fPAct = 116 + importedOffset.p;
+  const fCAct = 98.5 + importedOffset.c;
   const fCGoal = 130;
   
   femaleCalRatio.textContent = `${fCalAct} / ${fCalGoal} kcal`;
@@ -243,6 +375,238 @@ function updateRecipes() {
       ul.appendChild(li);
     });
   });
+}
+
+// Text input parsing logic (Regex & Database matching)
+function analyzeText() {
+  const text = textInput.value.trim();
+  if (!text) {
+    alert("請輸入食材內容！");
+    return;
+  }
+
+  showLoading(true, "文字萃取與營養計算中...");
+
+  setTimeout(() => {
+    parsedIngredientsList = [];
+    const lines = text.split('\n');
+    
+    lines.forEach(line => {
+      if (!line.trim()) return;
+
+      // Extract quantity and weight
+      // Matches: 400g, 400克, 3顆, 1盒, 2包 etc.
+      const numMatch = line.match(/(\d+(?:\.\d+)?)\s*(克|g|顆|盒|包|ml|cc|匙)?/i);
+      let qty = 100; // default weight 100g
+      let unit = "g";
+      if (numMatch) {
+        qty = parseFloat(numMatch[1]);
+        if (numMatch[2]) {
+          unit = numMatch[2].toLowerCase();
+        }
+      }
+
+      // Find keyword in database
+      let matchedKey = null;
+      let matchedData = null;
+      
+      for (const key in nutritionDB) {
+        if (line.includes(key)) {
+          matchedKey = key;
+          matchedData = nutritionDB[key];
+          break;
+        }
+      }
+
+      if (matchedData) {
+        let factor = 1;
+        let actualWeight = qty;
+        
+        if (matchedData.unit === "g") {
+          // If unit in DB is grams, the database values are per 100g.
+          // Handle conversions
+          if (unit === "盒" && (matchedKey.includes("豆腐") || matchedKey.includes("板豆腐"))) {
+            actualWeight = qty * 300; // 1 box tofu = ~300g
+          } else if (unit === "包" && matchedKey.includes("雞腿肉")) {
+            actualWeight = qty * 500; // 1 pack chicken thigh = ~500g
+          }
+          factor = actualWeight / 100;
+        } else {
+          // Unit-based (e.g. egg)
+          factor = qty;
+          actualWeight = qty; // represent unit count
+        }
+
+        parsedIngredientsList.push({
+          name: matchedKey,
+          weight: actualWeight,
+          unit: matchedData.unit,
+          calories: Math.round(matchedData.cal * factor),
+          protein: Math.round(matchedData.p * factor * 10) / 10,
+          carbs: Math.round(matchedData.c * factor * 10) / 10,
+          fat: Math.round(matchedData.f * factor * 10) / 10
+        });
+      } else {
+        // Fallback for unknown ingredient
+        parsedIngredientsList.push({
+          name: line.replace(/[\d\s克g顆盒包mlcc匙]/g, "") || "未知食材",
+          weight: qty,
+          unit: unit,
+          calories: Math.round(qty * 0.8), // general estimate
+          protein: Math.round(qty * 0.05 * 10) / 10,
+          carbs: Math.round(qty * 0.1 * 10) / 10,
+          fat: Math.round(qty * 0.02 * 10) / 10
+        });
+      }
+    });
+
+    displayAnalysisResults();
+    showLoading(false);
+  }, 1000);
+}
+
+// Photo analysis logic (Calls Gemini API or uses Mock simulator if no key)
+async function analyzePhoto() {
+  if (activeTab === 'photo' && !uploadedImageBase64) {
+    alert("請先上傳食材相片！");
+    return;
+  }
+
+  const apiKey = geminiKeyInput.value.trim() || localStorage.getItem('costco_gemini_key');
+  
+  if (!apiKey) {
+    // Simulated mock analysis
+    showLoading(true, "本地模擬分析中 (輸入 Gemini Key 可啟用真實 AI)...");
+    setTimeout(() => {
+      // Mock result using user's initial setup
+      parsedIngredientsList = [
+        { name: "去骨雞腿肉 (Costco)", weight: 400, unit: "g", calories: 464, protein: 80, carbs: 0, fat: 16 },
+        { name: "義美板豆腐", weight: 300, unit: "g", calories: 240, protein: 24, carbs: 6, fat: 13.5 },
+        { name: "新鮮雞蛋", weight: 3, unit: "顆", calories: 225, protein: 19.5, carbs: 1.5, fat: 15 },
+        { name: "冷凍毛豆仁 (Costco)", weight: 150, unit: "g", calories: 180, protein: 16.5, carbs: 15, fat: 7.5 }
+      ];
+      displayAnalysisResults();
+      showLoading(false);
+    }, 2500);
+    return;
+  }
+
+  showLoading(true, "連接 Google Gemini Vision AI 辨識中...");
+
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const prompt = `請分析這張照片中的食材（主要是 Costco 購買的健身增肌減脂食材，例如去骨雞腿肉、豬五花、毛豆、豆腐、雞蛋、蔬菜等）。
+請辨識出食材的名稱、估計克數（如果是雞蛋、盒裝豆腐等單位，可以用顆或盒，但盡量提供換算克數）。
+請估算出卡路里(calories), 蛋白質(protein), 碳水化合物(carbs)與脂肪(fat)含量。
+你必須只回覆一個 JSON 格式的陣列，且不要用 markdown (\`\`\`json) 標記。格式範例如下：
+[
+  {"name": "去骨雞腿肉", "weight": 400, "unit": "g", "calories": 464, "protein": 80.0, "carbs": 0.0, "fat": 16.0},
+  {"name": "雞蛋", "weight": 3, "unit": "顆", "calories": 225, "protein": 19.5, "carbs": 1.5, "fat": 15.0}
+]`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: prompt },
+            { inlineData: { mimeType: "image/jpeg", data: uploadedImageBase64 } }
+          ]
+        }]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API 請求失敗: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const resultText = data.candidates[0].content.parts[0].text.trim();
+    
+    // Clean JSON markdown tags if present
+    const cleanedJson = resultText.replace(/```json/g, "").replace(/```/g, "").trim();
+    parsedIngredientsList = JSON.parse(cleanedJson);
+
+    displayAnalysisResults();
+  } catch (err) {
+    console.error(err);
+    alert(`AI 辨識發生錯誤: ${err.message}\n已切換為本地模擬分析。`);
+    // Fallback
+    parsedIngredientsList = [
+      { name: "去骨雞腿肉 (Costco)", weight: 400, unit: "g", calories: 464, protein: 80, carbs: 0, fat: 16 },
+      { name: "新鮮雞蛋", weight: 3, unit: "顆", calories: 225, protein: 19.5, carbs: 1.5, fat: 15 }
+    ];
+    displayAnalysisResults();
+  } finally {
+    showLoading(false);
+  }
+}
+
+// Display results in the table
+function displayAnalysisResults() {
+  analysisTableBody.innerHTML = '';
+  let totalCal = 0, totalP = 0, totalC = 0, totalF = 0;
+
+  parsedIngredientsList.forEach(item => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${item.name}</strong></td>
+      <td>${item.weight} ${item.unit}</td>
+      <td>${item.calories} kcal</td>
+      <td>${item.protein}g</td>
+      <td>${item.carbs}g</td>
+      <td>${item.fat}g</td>
+    `;
+    analysisTableBody.appendChild(tr);
+
+    totalCal += item.calories;
+    totalP += item.protein;
+    totalC += item.carbs;
+    totalF += item.fat;
+  });
+
+  totalAnalCal.textContent = Math.round(totalCal);
+  totalAnalP.textContent = Math.round(totalP * 10) / 10;
+  totalAnalC.textContent = Math.round(totalC * 10) / 10;
+  totalAnalF.textContent = Math.round(totalF * 10) / 10;
+
+  resultPlaceholder.style.display = 'none';
+  resultsContainer.style.display = 'block';
+}
+
+// Import parsed macros into the progress bars
+function importIngredientsToMacros() {
+  if (parsedIngredientsList.length === 0) return;
+
+  let totalP = 0, totalCal = 0, totalC = 0, totalF = 0;
+  parsedIngredientsList.forEach(item => {
+    totalCal += item.calories;
+    totalP += item.protein;
+    totalC += item.carbs;
+    totalF += item.fat;
+  });
+
+  // Distribute equally or apply to cumulative offset
+  importedOffset.cal = Math.round(totalCal);
+  importedOffset.p = Math.round(totalP);
+  importedOffset.c = Math.round(totalC);
+  importedOffset.f = Math.round(totalF);
+
+  calculateTargets();
+  alert(`成功匯入！今日攝取進度已累加該食材的營養價值。`);
+}
+
+// Toggle loading state
+function showLoading(show, text = "") {
+  if (show) {
+    aiStatusText.textContent = text;
+    aiLoading.style.display = 'flex';
+    resultPlaceholder.style.display = 'none';
+    resultsContainer.style.display = 'none';
+  } else {
+    aiLoading.style.display = 'none';
+  }
 }
 
 // Local Storage helpers
@@ -289,6 +653,11 @@ function loadFromLocalStorage() {
     } catch (e) {
       console.error('Error loading settings', e);
     }
+  }
+
+  const savedKey = localStorage.getItem('costco_gemini_key');
+  if (savedKey) {
+    geminiKeyInput.value = savedKey;
   }
 }
 

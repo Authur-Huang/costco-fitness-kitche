@@ -148,6 +148,88 @@
           </div>
         </section>
 
+        <!-- AI Ingredients Analysis Section -->
+        <section class="ai-analysis-section">
+          <h2>📸 AI 食材拍照與分析儀表板</h2>
+          <p class="section-desc">上傳您的 Costco 採買照片或發票，或直接輸入食材清單，AI 將為您辨識並精準解析熱量與蛋白質！</p>
+          
+          <div class="ai-grid">
+            <!-- Left: Inputs -->
+            <div class="ai-inputs-panel">
+              <div class="api-key-group">
+                <label for="gemini-key">🔑 Gemini API 金鑰 (選填)</label>
+                <input type="password" id="gemini-key" placeholder="輸入您的 API Key 以啟用真實照片 AI 辨識">
+                <small class="key-tip">可至 <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a> 免費申請。金鑰僅安全儲存於您本地瀏覽器中。</small>
+              </div>
+
+              <!-- Tabs for Photo vs Text -->
+              <div class="ai-tabs">
+                <button class="ai-tab-btn active" id="tab-btn-photo">📷 照片/發票辨識</button>
+                <button class="ai-tab-btn" id="tab-btn-text">✍️ 文字/收據輸入</button>
+              </div>
+
+              <!-- Photo Upload Area -->
+              <div class="ai-tab-content active" id="content-photo">
+                <div class="upload-dropzone" id="dropzone">
+                  <span class="upload-icon">📤</span>
+                  <p>拖曳相片至此，或<span>點擊上傳</span></p>
+                  <input type="file" id="file-upload" accept="image/*" style="display: none;">
+                </div>
+                <div class="preview-container" id="image-preview-container" style="display: none;">
+                  <img id="image-preview" src="" alt="上傳的食材相片">
+                  <button class="remove-btn" id="remove-img-btn">❌ 移除</button>
+                </div>
+              </div>
+
+              <!-- Text Area Input -->
+              <div class="ai-tab-content" id="content-text">
+                <textarea id="text-input" placeholder="例如：
+去骨雞腿肉 400克
+豆腐 1盒
+毛豆 150g
+雞蛋 3顆"></textarea>
+                <button class="ai-action-btn" id="analyze-text-btn">🔍 進行文字分析</button>
+              </div>
+
+              <button class="ai-action-btn primary" id="analyze-photo-btn">⚡ 開始 AI 照片辨識</button>
+            </div>
+
+            <!-- Right: Analysis Results -->
+            <div class="ai-results-panel">
+              <div class="loading-overlay" id="ai-loading" style="display: none;">
+                <div class="spinner"></div>
+                <p id="ai-status-text">AI 正在全力解析您的食材...</p>
+              </div>
+              <div class="placeholder-result" id="result-placeholder">
+                <span class="placeholder-icon">🤖</span>
+                <p>上傳照片或輸入文字後，AI 的分析報告會即時顯示在此處。</p>
+              </div>
+              <div class="results-table-container" id="results-container" style="display: none;">
+                <h4>📋 AI 辨識食材與營養分析報告</h4>
+                <table class="results-table">
+                  <thead>
+                    <tr>
+                      <th>食材名稱</th>
+                      <th>估計重量 (g)</th>
+                      <th>熱量 (kcal)</th>
+                      <th>蛋白質 (g)</th>
+                      <th>碳水 (g)</th>
+                      <th>脂肪 (g)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="analysis-table-body">
+                    <!-- Dynamic rows -->
+                  </tbody>
+                </table>
+                <div class="results-summary">
+                  <p>總計：熱量 <span id="total-anal-cal">0</span> kcal | 蛋白質 <span id="total-anal-p">0</span>g | 碳水 <span id="total-anal-c">0</span>g | 脂肪 <span id="total-anal-f">0</span>g</p>
+                </div>
+                <button class="ai-action-btn success" id="import-ingredients-btn">📥 將分析食材匯入今日菜單進度</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <!-- Interactive Recipes Section -->
         <section class="recipes-section">
           <h2>🍳 Costco 智慧食譜與分量調整</h2>
