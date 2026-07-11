@@ -208,6 +208,8 @@ const workoutLogWho = document.getElementById('workout-log-who');
 const workoutLogType = document.getElementById('workout-log-type');
 const workoutLogDuration = document.getElementById('workout-log-duration');
 const workoutLogName = document.getElementById('workout-log-name');
+const workoutLogLoad = document.getElementById('workout-log-load');
+const workoutLogIntensity = document.getElementById('workout-log-intensity');
 const workoutLogDesc = document.getElementById('workout-log-desc');
 const workoutLogBurned = document.getElementById('workout-log-burned');
 const workoutInfoTip = document.getElementById('workout-info-tip');
@@ -431,14 +433,17 @@ function setupLogFormListeners() {
     const type = workoutLogType.value;
     const name = workoutLogName.value.trim();
     const duration = parseFloat(workoutLogDuration.value) || 0;
+    const load = parseFloat(workoutLogLoad.value) || 0;
+    const intensity = workoutLogIntensity.value;
     const desc = workoutLogDesc.value.trim();
     const burnedCal = parseFloat(workoutLogBurned.textContent) || 0;
 
-    fitnessDB.workoutLogs.push({ date, who, type, name, duration, desc, burnedCal });
+    fitnessDB.workoutLogs.push({ date, who, type, name, duration, load, intensity, desc, burnedCal });
     fitnessDB.workoutLogs.sort((a,b) => b.date.localeCompare(a.date));
 
     // Reset
     workoutLogName.value = '';
+    workoutLogLoad.value = '0';
     workoutLogDesc.value = '';
     workoutLogDuration.value = '30';
 
@@ -457,11 +462,13 @@ function setupLogFormListeners() {
 
 // Workout Calorie Auto-Estimation Setup
 function setupWorkoutListeners() {
-  if (workoutLogWho && workoutLogType && workoutLogDuration) {
-    [workoutLogWho, workoutLogType].forEach(el => {
+  if (workoutLogWho && workoutLogType && workoutLogDuration && workoutLogLoad && workoutLogIntensity) {
+    [workoutLogWho, workoutLogType, workoutLogIntensity].forEach(el => {
       el.addEventListener('change', calculateBurnedCalories);
     });
-    workoutLogDuration.addEventListener('input', calculateBurnedCalories);
+    [workoutLogDuration, workoutLogLoad].forEach(el => {
+      el.addEventListener('input', calculateBurnedCalories);
+    });
     
     // Listen to weight changes to update MET calculation
     if (logMaleW) logMaleW.addEventListener('input', calculateBurnedCalories);
@@ -473,11 +480,12 @@ function setupWorkoutListeners() {
 }
 
 function calculateBurnedCalories() {
-  if (!workoutLogWho || !workoutLogType || !workoutLogDuration || !workoutLogBurned) return;
+  if (!workoutLogWho || !workoutLogType || !workoutLogDuration || !workoutLogBurned || !workoutLogLoad || !workoutLogIntensity) return;
   
   const who = workoutLogWho.value;
   const type = workoutLogType.value;
   const duration = parseFloat(workoutLogDuration.value) || 0;
+  const load = parseFloat(workoutLogLoad.value) || 0;
   
   // Default weights from inputs or fallbacks
   let weight = 70;
@@ -494,16 +502,22 @@ function calculateBurnedCalories() {
   // MET values
   const selectedOpt = workoutLogType.options[workoutLogType.selectedIndex];
   if (!selectedOpt) return;
-  const met = parseFloat(selectedOpt.getAttribute('data-met')) || 4.0;
+  const baseMet = parseFloat(selectedOpt.getAttribute('data-met')) || 4.0;
   
-  // Calories = MET * Weight (kg) * (Duration / 60)
-  const calories = Math.round(met * weight * (duration / 60));
+  // Intensity factor
+  const selectedIntensityOpt = workoutLogIntensity.options[workoutLogIntensity.selectedIndex];
+  const factor = selectedIntensityOpt ? parseFloat(selectedIntensityOpt.getAttribute('data-factor')) : 1.0;
+  
+  const met = baseMet * factor;
+  
+  // Calories = MET * (Weight + Load) * (Duration / 60)
+  const calories = Math.round(met * (weight + load) * (duration / 60));
   workoutLogBurned.textContent = calories;
   
   // Dynamic Tip text
   let tip = "";
   if (type === '重量訓練') {
-    tip = "💡 重訓的『後燃效應』能持續消耗脂肪，也有助於維持瘦體重與提高代謝率！";
+    tip = `💡 重訓的『後燃效應』能持續消耗脂肪。目前負重 ${load} kg，承受重量越大，肌肉收縮能耗與後燃效果越強！`;
   } else if (type === '有氧跑步') {
     tip = "💡 跑步是極佳的心肺訓練。建議控制強度在慢跑配速，以最大心率 60-70% 達到最高燃脂效率。";
   } else if (type === '單車飛輪') {
@@ -592,7 +606,9 @@ function renderHistoryTable() {
     fitnessDB.workoutLogs.forEach((item, index) => {
       const tr = document.createElement('tr');
       const whoLabel = item.who === 'both' ? '👫 雙人' : (item.who === 'male' ? '🙋‍♂️ 男生' : '🙋‍♀️ 女生');
-      const timeDesc = `${item.duration || 30} 分鐘${item.desc ? ` / ${item.desc}` : ''}`;
+      const loadDesc = item.load ? ` / 負重 ${item.load}kg` : '';
+      const intensityDesc = item.intensity ? ` / ${item.intensity}` : '';
+      const timeDesc = `${item.duration || 30} 分鐘${loadDesc}${intensityDesc}${item.desc ? ` / ${item.desc}` : ''}`;
       const calDesc = `${item.burnedCal || 0} kcal`;
       tr.innerHTML = `
         <td>${item.date}</td>

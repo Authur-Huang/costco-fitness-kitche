@@ -489,8 +489,23 @@
                     <input type="text" id="workout-log-name" placeholder="例如：啞鈴胸推、壺鈴搖擺" required>
                   </div>
                   <div class="form-group">
-                    <label for="workout-log-desc">重量/強度備註</label>
-                    <input type="text" id="workout-log-desc" placeholder="例如：16公斤、中高強度">
+                    <label for="workout-log-load">🏋️ 運動負重 (kg)</label>
+                    <input type="number" id="workout-log-load" value="0" min="0" max="300" required>
+                  </div>
+                </div>
+
+                <div class="form-group-row" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1rem; margin-top: 0.75rem;">
+                  <div class="form-group">
+                    <label for="workout-log-intensity">⚡ 運動強度</label>
+                    <select id="workout-log-intensity" required style="background: rgba(15, 23, 42, 0.8); border-color: var(--border-color); width: 100%;">
+                      <option value="中等強度" data-factor="1.0" selected>中等強度 (1.0x)</option>
+                      <option value="低強度" data-factor="0.75">輕度/低強度 (0.75x)</option>
+                      <option value="高強度/力竭" data-factor="1.3">高強度/力竭 (1.3x)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="workout-log-desc">其他備註</label>
+                    <input type="text" id="workout-log-desc" placeholder="例如：組間休息60秒">
                   </div>
                 </div>
 
