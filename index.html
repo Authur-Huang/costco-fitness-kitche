@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Costco 健身廚房與減脂配給看板</title>
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-logo">
+        <span class="logo-icon">🔥</span>
+        <h1>Costco <span>健身廚房</span></h1>
+      </div>
+      <p class="header-subtitle">雙人增肌減脂備餐與熱量配給系統</p>
+    </header>
+
+    <div class="dashboard-layout">
+      <!-- Sidebar Settings -->
+      <aside class="sidebar">
+        <!-- Profile Card 1: Male -->
+        <div class="profile-card male-card">
+          <div class="profile-header">
+            <span class="avatar">🙋‍♂️</span>
+            <h3>男生 (減脂控糖)</h3>
+          </div>
+          <div class="profile-inputs">
+            <div class="input-group">
+              <label for="male-weight">體重 (kg)</label>
+              <input type="number" id="male-weight" value="85" min="40" max="150">
+            </div>
+            <div class="input-group">
+              <label for="male-height">身高 (cm)</label>
+              <input type="number" id="male-height" value="180" min="120" max="220">
+            </div>
+            <div class="input-group">
+              <label for="male-age">年齡 (歲)</label>
+              <input type="number" id="male-age" value="30" min="15" max="100">
+            </div>
+            <div class="input-group">
+              <label for="male-target-fat">目標體脂 (%)</label>
+              <input type="number" id="male-target-fat" value="15" min="5" max="40">
+            </div>
+          </div>
+          <div class="macro-badge">
+            目標熱量: <span id="male-target-calories">1,840</span> kcal / 蛋白質: <span id="male-target-protein">170</span>g
+          </div>
+        </div>
+
+        <!-- Profile Card 2: Female -->
+        <div class="profile-card female-card">
+          <div class="profile-header">
+            <span class="avatar">🙋‍♀️</span>
+            <h3>女生 (減脂控糖)</h3>
+          </div>
+          <div class="profile-inputs">
+            <div class="input-group">
+              <label for="female-weight">體重 (kg)</label>
+              <input type="number" id="female-weight" value="67" min="30" max="120">
+            </div>
+            <div class="input-group">
+              <label for="female-height">身高 (cm)</label>
+              <input type="number" id="female-height" value="170" min="120" max="220">
+            </div>
+            <div class="input-group">
+              <label for="female-age">年齡 (歲)</label>
+              <input type="number" id="female-age" value="30" min="15" max="100">
+            </div>
+            <div class="input-group">
+              <label for="female-target-weight">目標體重 (kg)</label>
+              <input type="number" id="female-target-weight" value="60" min="30" max="100">
+            </div>
+          </div>
+          <div class="macro-badge">
+            目標熱量: <span id="female-target-calories">1,465</span> kcal / 蛋白質: <span id="female-target-protein">116</span>g
+          </div>
+        </div>
+
+        <!-- Costco Purchase Planner -->
+        <div class="costco-box">
+          <h3>📦 Costco 大包裝配給計算</h3>
+          <div class="input-group">
+            <label for="raw-meat-weight">採買肉品總重 (g)</label>
+            <input type="number" id="raw-meat-weight" value="3000" step="500">
+            <small>例如：去骨雞腿肉 3000g</small>
+          </div>
+          <div class="prep-result">
+            <p><strong>建議分裝方案：</strong></p>
+            <ul>
+              <li>🙋‍♂️ 男生份量：每袋 <span id="prep-male-g">250</span>g (可分裝 <span id="prep-male-bags">6</span> 袋)</li>
+              <li>🙋‍♀️ 女生份量：每袋 <span id="prep-female-g">150</span>g (可分裝 <span id="prep-female-bags">10</span> 袋)</li>
+            </ul>
+            <p class="prep-duration">此包裝可供雙人吃 <span id="prep-days">6</span> 天份的晚餐！</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-panel">
+        <!-- Daily Macro Overview -->
+        <section class="overview-section">
+          <h2>📊 每日熱量與巨量營養素配給</h2>
+          <div class="macro-charts">
+            <!-- Male Macros -->
+            <div class="macro-chart-box male-theme">
+              <h4>🙋‍♂️ 男生今日攝取進度</h4>
+              <div class="progress-container">
+                <div class="progress-bar-wrapper">
+                  <div class="label-row"><span>熱量 Calories</span><span id="male-cal-ratio">1840 / 1840 kcal</span></div>
+                  <div class="bar-bg"><div class="bar-fill" id="male-cal-fill" style="width: 100%;"></div></div>
+                </div>
+                <div class="progress-bar-wrapper">
+                  <div class="label-row"><span>蛋白質 Protein</span><span id="male-p-ratio">172 / 170g</span></div>
+                  <div class="bar-bg"><div class="bar-fill" id="male-p-fill" style="width: 100%;"></div></div>
+                </div>
+                <div class="progress-bar-wrapper">
+                  <div class="label-row"><span>碳水化合物 Carbs</span><span id="male-c-ratio">148 / 150g</span></div>
+                  <div class="bar-bg"><div class="bar-fill" id="male-c-fill" style="width: 98%;"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Female Macros -->
+            <div class="macro-chart-box female-theme">
+              <h4>🙋‍♀️ 女生今日攝取進度</h4>
+              <div class="progress-container">
+                <div class="progress-bar-wrapper">
+                  <div class="label-row"><span>熱量 Calories</span><span id="female-cal-ratio">1465 / 1500 kcal</span></div>
+                  <div class="bar-bg"><div class="bar-fill" id="female-cal-fill" style="width: 97%;"></div></div>
+                </div>
+                <div class="progress-bar-wrapper">
+                  <div class="label-row"><span>蛋白質 Protein</span><span id="female-p-ratio">116 / 120g</span></div>
+                  <div class="bar-bg"><div class="bar-fill" id="female-p-fill" style="width: 96%;"></div></div>
+                </div>
+                <div class="progress-bar-wrapper">
+                  <div class="label-row"><span>碳水化合物 Carbs</span><span id="female-c-ratio">125 / 135g</span></div>
+                  <div class="bar-bg"><div class="bar-fill" id="female-c-fill" style="width: 92%;"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Interactive Recipes Section -->
+        <section class="recipes-section">
+          <h2>🍳 Costco 智慧食譜與分量調整</h2>
+          <div class="portion-selector">
+            <span class="selector-label">顯示份量模式：</span>
+            <button class="portion-btn active" data-mode="both">👫 雙人共餐份量</button>
+            <button class="portion-btn" data-mode="male">🙋‍♂️ 僅男生份量</button>
+            <button class="portion-btn" data-mode="female">🙋‍♀️ 僅女生份量</button>
+          </div>
+
+          <div class="recipe-grid">
+            <!-- Recipe 1: Breakfast Oats -->
+            <div class="recipe-card">
+              <div class="recipe-img-placeholder breakfast-bg">
+                <span class="recipe-badge">早餐</span>
+                <span class="recipe-time">⏱️ 5 分鐘</span>
+                <h3>高蛋白穀物莓果麥片豆奶碗</h3>
+              </div>
+              <div class="recipe-content">
+                <div class="recipe-equipment">
+                  <span>無需烹調</span>
+                </div>
+                <div class="recipe-ingredients">
+                  <h4>🥣 食材清單</h4>
+                  <ul id="ing-list-breakfast">
+                    <!-- Dynamic ingredients -->
+                  </ul>
+                </div>
+                <div class="recipe-steps">
+                  <h4>📝 烹飪步驟</h4>
+                  <ol>
+                    <li>在碗中加入燕麥片與綜合穀物/堅果。</li>
+                    <li>倒入無糖豆奶，加入冷凍莓果。</li>
+                    <li>加入乳清蛋白粉，均勻攪拌至粉末溶解即可食用。</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recipe 2: Pork Tofu Patty -->
+            <div class="recipe-card">
+              <div class="recipe-img-placeholder patty-bg">
+                <span class="recipe-badge">午餐</span>
+                <span class="recipe-time">⏱️ 20 分鐘</span>
+                <h3>豆腐洋蔥豬肉漢堡排</h3>
+              </div>
+              <div class="recipe-content">
+                <div class="recipe-equipment">
+                  <span>🍳 平底鍋</span><span>💨 氣炸鍋</span>
+                </div>
+                <div class="recipe-ingredients">
+                  <h4>🥣 食材清單</h4>
+                  <ul id="ing-list-patty">
+                    <!-- Dynamic ingredients -->
+                  </ul>
+                </div>
+                <div class="recipe-steps">
+                  <h4>📝 烹飪步驟</h4>
+                  <ol>
+                    <li>將豆腐捏碎，用乾淨廚房紙巾徹底壓乾水分。洋蔥切細丁炒香放涼。</li>
+                    <li>將豬絞肉、豆腐碎、洋蔥丁、雞蛋與調味料（鹽、胡椒、醬油）混合。</li>
+                    <li>朝同方向攪拌至產生黏性，揉成圓餅狀。</li>
+                    <li>用平底鍋小火煎至熟透，或用氣炸鍋 180度烤 12-15 分鐘。</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recipe 3: Garlic Chicken Thigh -->
+            <div class="recipe-card">
+              <div class="recipe-img-placeholder chicken-bg">
+                <span class="recipe-badge">晚餐</span>
+                <span class="recipe-time">⏱️ 25 分鐘</span>
+                <h3>蒜香烤去皮雞腿排佐時蔬</h3>
+              </div>
+              <div class="recipe-content">
+                <div class="recipe-equipment">
+                  <span>💧 水波爐</span><span>🔥 烤箱</span><span>💨 氣炸鍋</span>
+                </div>
+                <div class="recipe-ingredients">
+                  <h4>🥣 食材清單</h4>
+                  <ul id="ing-list-chicken">
+                    <!-- Dynamic ingredients -->
+                  </ul>
+                </div>
+                <div class="recipe-steps">
+                  <h4>📝 烹飪步驟</h4>
+                  <ol>
+                    <li>去骨雞腿排徹底**去皮**（大幅降脂），用鹽、胡椒、蒜末醃製。</li>
+                    <li>花椰菜、紅蘿蔔、洋蔥切塊，淋上 1 茶匙油抓勻。</li>
+                    <li>鋪於烤盤上，送入水波爐/烤箱（200度烤 22-25 分鐘）或氣炸。</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recipe 4: Edamame Egg -->
+            <div class="recipe-card">
+              <div class="recipe-img-placeholder egg-bg">
+                <span class="recipe-badge">配餐/晚餐</span>
+                <span class="recipe-time">⏱️ 10 分鐘</span>
+                <h3>高蛋白毛豆仁洋蔥炒蛋</h3>
+              </div>
+              <div class="recipe-content">
+                <div class="recipe-equipment">
+                  <span>🍳 平底鍋</span>
+                </div>
+                <div class="recipe-ingredients">
+                  <h4>🥣 食材清單</h4>
+                  <ul id="ing-list-egg">
+                    <!-- Dynamic ingredients -->
+                  </ul>
+                </div>
+                <div class="recipe-steps">
+                  <h4>📝 烹飪步驟</h4>
+                  <ol>
+                    <li>毛豆仁先川燙 3 分鐘撈起。洋蔥切絲。</li>
+                    <li>熱鍋加 1 茶匙油炒香洋蔥絲，加入毛豆仁翻炒。</li>
+                    <li>倒入打散的蛋液，炒成滑蛋碎，加鹽調味即可。</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- JavaScript logic -->
+  <script src="app.js"></script>
+</body>
+</html>
