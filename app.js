@@ -846,6 +846,65 @@ function updateTodayProgress(mCalGoal, mPGoal, fCalGoal, fPGoal) {
   femaleCFill.style.width = `${Math.min((fCAct / fCGoal) * 100, 100)}%`;
 }
 
+// Unit conversion helper for Costco Inventory
+function getConvertedStock(invItem, recipeUnit) {
+  if (!invItem) return 0;
+  
+  const invUnit = invItem.unit;
+  const rem = invItem.remaining;
+  
+  if (invUnit === recipeUnit) {
+    return rem;
+  }
+  
+  // g <-> kg
+  if (invUnit === 'kg' && recipeUnit === 'g') {
+    return rem * 1000;
+  }
+  if (invUnit === 'g' && recipeUnit === 'kg') {
+    return rem / 1000;
+  }
+  
+  // 顆 <-> 粒
+  if ((invUnit === '顆' && recipeUnit === '粒') || (invUnit === '粒' && recipeUnit === '顆')) {
+    return rem;
+  }
+  
+  return rem; // Fallback
+}
+
+function deductStock(invItem, recipeAmount, recipeUnit) {
+  if (!invItem) return;
+  
+  const invUnit = invItem.unit;
+  
+  if (invUnit === recipeUnit) {
+    invItem.remaining = Math.max(0, invItem.remaining - recipeAmount);
+    return;
+  }
+  
+  // g <-> kg
+  if (invUnit === 'kg' && recipeUnit === 'g') {
+    const neededInKg = recipeAmount / 1000;
+    invItem.remaining = Math.max(0, invItem.remaining - neededInKg);
+    return;
+  }
+  if (invUnit === 'g' && recipeUnit === 'kg') {
+    const neededInG = recipeAmount * 1000;
+    invItem.remaining = Math.max(0, invItem.remaining - neededInG);
+    return;
+  }
+  
+  // 顆 <-> 粒
+  if ((invUnit === '顆' && recipeUnit === '粒') || (invUnit === '粒' && recipeUnit === '顆')) {
+    invItem.remaining = Math.max(0, invItem.remaining - recipeAmount);
+    return;
+  }
+  
+  // Fallback
+  invItem.remaining = Math.max(0, invItem.remaining - recipeAmount);
+}
+
 // Update Interactive Recipes view based on portion mode
 function updateRecipes() {
   Object.keys(recipes).forEach(recipeKey => {
@@ -885,12 +944,12 @@ function updateRecipes() {
         weightSpan.innerHTML = `<strong style="color:var(--text-main);">${needed}${ing.unit}</strong>`;
       }
 
-      // Check stock levels
+      // Check stock levels with unit conversion
       let invItem = null;
       if (fitnessDB.costcoInventory) {
         invItem = fitnessDB.costcoInventory.find(inv => inv.name.includes(ing.name) || ing.name.includes(inv.name));
       }
-      const rem = invItem ? invItem.remaining : 0;
+      const remConverted = invItem ? getConvertedStock(invItem, ing.unit) : 0;
 
       const stockBadge = document.createElement('span');
       stockBadge.style.fontSize = '0.75rem';
@@ -899,14 +958,14 @@ function updateRecipes() {
       stockBadge.style.marginLeft = '0.5rem';
       stockBadge.style.display = 'inline-block';
 
-      if (rem >= needed && needed > 0) {
+      if (remConverted >= needed && needed > 0) {
         stockBadge.style.background = 'rgba(16, 185, 129, 0.15)';
         stockBadge.style.color = '#34d399';
-        stockBadge.textContent = `✔️ 庫存足 (${Math.round(rem * 10)/10}${ing.unit})`;
+        stockBadge.textContent = `✔️ 庫存足 (剩 ${Math.round(invItem.remaining * 10)/10}${invItem.unit})`;
       } else if (needed > 0) {
         stockBadge.style.background = 'rgba(239, 68, 68, 0.15)';
         stockBadge.style.color = '#f87171';
-        stockBadge.textContent = `❌ 庫存缺 (${Math.round((needed - rem) * 10)/10}${ing.unit})`;
+        stockBadge.textContent = `❌ 庫存缺 (缺 ${Math.round((needed - remConverted) * 10)/10}${ing.unit})`;
       } else {
         stockBadge.style.background = 'rgba(255, 255, 255, 0.05)';
         stockBadge.style.color = 'var(--text-muted)';
@@ -1356,11 +1415,11 @@ window.cookRecipe = function(recipeKey) {
       needed = ing.female;
     }
     
-    // Find item
+    // Find item with unit conversion
     let invItem = fitnessDB.costcoInventory.find(inv => inv.name.includes(ing.name) || ing.name.includes(inv.name));
-    if (!invItem || invItem.remaining < needed) {
-      const remVal = invItem ? invItem.remaining : 0;
-      outOfStock.push(`${ing.name} (缺 ${Math.round((needed - remVal) * 10) / 10}${ing.unit})`);
+    const remConverted = invItem ? getConvertedStock(invItem, ing.unit) : 0;
+    if (!invItem || remConverted < needed) {
+      outOfStock.push(`${ing.name} (缺 ${Math.round((needed - remConverted) * 10) / 10}${ing.unit})`);
     }
   });
   
@@ -1383,7 +1442,7 @@ window.cookRecipe = function(recipeKey) {
     
     let invItem = fitnessDB.costcoInventory.find(inv => inv.name.includes(ing.name) || ing.name.includes(inv.name));
     if (invItem) {
-      invItem.remaining = Math.max(0, invItem.remaining - needed);
+      deductStock(invItem, needed, ing.unit);
     }
   });
   
