@@ -875,16 +875,39 @@ window.deleteWeightItem = function(date) {
   renderHistoryTable();
 };
 
-// Handle selected image file
+// Handle selected image file.
+// Phone photos are several MB; base64 inflates them ~33% and Vercel rejects
+// request bodies over ~4.5MB, which made photo analysis silently fail.
+// Downscale + re-encode via canvas so the upload stays small (also strips EXIF).
 function handleImageFile(file) {
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    uploadedImageBase64 = e.target.result.split(',')[1];
-    imagePreview.src = e.target.result;
+  const img = new Image();
+  const objectUrl = URL.createObjectURL(file);
+
+  img.onload = function() {
+    const MAX_EDGE = 1280;
+    const scale = Math.min(1, MAX_EDGE / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * scale));
+    const h = Math.max(1, Math.round(img.height * scale));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    uploadedImageBase64 = dataUrl.split(',')[1];
+    imagePreview.src = dataUrl;
     dropzone.style.display = 'none';
     imagePreviewContainer.style.display = 'block';
+    URL.revokeObjectURL(objectUrl);
   };
-  reader.readAsDataURL(file);
+
+  img.onerror = function() {
+    URL.revokeObjectURL(objectUrl);
+    alert('無法讀取這張圖片，請改用 JPG 或 PNG 格式再試一次。');
+  };
+
+  img.src = objectUrl;
 }
 
 const round1 = v => Math.round(v * 10) / 10;
@@ -1216,7 +1239,13 @@ async function callAnalysisAPI({ type, imageBase64, text }) {
   });
 
   if (!response.ok) {
-    throw new Error('SERVERLESS_API_FAILED');
+    // Surface the real server-side reason so failures aren't silent
+    let msg = `伺服器回應 HTTP ${response.status}`;
+    try {
+      const errJson = await response.json();
+      if (errJson && errJson.error) msg = errJson.error;
+    } catch (e) {}
+    throw new Error(msg);
   }
 
   return await response.json();
@@ -1310,11 +1339,16 @@ async function analyzeText() {
 
       displayAnalysisResults();
       showLoading(false);
+      if (window.location.protocol !== 'file:') {
+        alert('⚠️ AI 服務暫時無法連線，已改用內建離線資料庫估算，數值僅供參考（可直接在表格中修正）。');
+      }
     }, 800);
   }
 }
 
-// Photo analysis action
+// Photo analysis action.
+// On failure this must NOT show fake results — an honest error beats fabricated
+// ingredients that don't match the photo. Demo data only on file:// local dev.
 async function analyzePhoto() {
   if (!uploadedImageBase64) {
     alert("請先上傳食材相片！");
@@ -1328,8 +1362,11 @@ async function analyzePhoto() {
     displayAnalysisResults();
     showLoading(false);
   } catch (err) {
-    console.log("Photo analysis API failed, running mock simulation:", err);
-    setTimeout(() => {
+    console.error("Photo analysis API failed:", err);
+    showLoading(false);
+
+    if (window.location.protocol === 'file:') {
+      // Local dev without serverless functions: show demo data, clearly labelled
       parsedIngredientsList = [
         { name: "去骨雞腿肉 (Costco)", weight: 400, unit: "g", calories: 464, protein: 80, carbs: 0, fat: 16, fiber: 0, sodium: 320, box_2d: [150, 100, 500, 600] },
         { name: "義美板豆腐", weight: 300, unit: "g", calories: 240, protein: 24, carbs: 6, fat: 13.5, fiber: 2.4, sodium: 20, box_2d: [150, 550, 450, 830] },
@@ -1337,8 +1374,13 @@ async function analyzePhoto() {
         { name: "冷凍毛豆仁 (Costco)", weight: 150, unit: "g", calories: 180, protein: 16.5, carbs: 15, fat: 7.5, fiber: 7.5, sodium: 10, box_2d: [400, 100, 800, 450] }
       ];
       displayAnalysisResults();
-      showLoading(false);
-    }, 2000);
+      alert('⚠️ 本地離線模式：以下為「示範資料」，並非真實辨識結果。');
+      return;
+    }
+
+    parsedIngredientsList = [];
+    displayAnalysisResults();
+    alert(`❌ AI 照片辨識失敗：${err.message}\n\n請稍後再試一次；若持續失敗，可切換「✍️ 文字/收據輸入」直接輸入食材名稱與份量進行分析。`);
   }
 }
 
