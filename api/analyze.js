@@ -53,15 +53,25 @@ ${text}`;
       }];
     }
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents })
-    });
+    // Gemini occasionally returns 503 (model overloaded) / 429; these are
+    // transient, so retry a couple of times with a short backoff.
+    let response;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents })
+      });
+      if (response.ok || (response.status !== 503 && response.status !== 429) || attempt === 3) break;
+      await new Promise(r => setTimeout(r, 1200 * attempt));
+    }
 
     if (!response.ok) {
       const errText = await response.text();
-      return res.status(response.status).json({ error: `Gemini API error: ${errText}` });
+      const friendly = (response.status === 503 || response.status === 429)
+        ? 'AI 模型目前負載過高（Google 端暫時性壅塞），請等 1~2 分鐘後再試一次。'
+        : `Gemini API error: ${errText}`;
+      return res.status(response.status).json({ error: friendly });
     }
 
     const data = await response.json();
