@@ -1,0 +1,17 @@
+{
+  "name": "Costco 雙人智慧健身廚房",
+  "short_name": "Costco健身",
+  "description": "Costco雙人智慧健身廚房與冰箱減脂配給看板",
+  "start_url": "/?pwa=true",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#0ea5e9",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

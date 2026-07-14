@@ -61,6 +61,9 @@
 ├── index.html                  # 主介面：包含響應式 CSS 格局、所有 Tab Pane 與 modal
 ├── style.css                   # 設計系統：深色科技感主題、Glassmorphism 磨砂玻璃、自適應佈局
 ├── app.js                      # 核心控制器：控制狀態 (fitnessDB)、Chart.js、雲端 REST API 同步、單位換算與公式
+├── manifest.json               # PWA 設定描述檔：供手機瀏覽器辨識與定義 App 名稱、啟動參數與圖示
+├── sw.js                       # PWA Service Worker：提供離線快取與背景異步更新加載策略
+├── icon.jpg / apple-touch-icon.jpg # App 圖示：供手機桌面捷徑與蘋果 touch-icon 渲染
 ├── api/
 │   ├── analyze.js              # Vercel Serverless Function：代理 Gemini 進行食材照片/文字營養分析
 │   ├── load.js                 # Vercel Serverless Function：從 Vercel KV 讀取共享資料（GET /api/load?key=<shareKey>）

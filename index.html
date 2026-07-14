@@ -9,7 +9,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=11">
+  <link rel="stylesheet" href="style.css?v=12">
+  <!-- PWA & Apple iOS Standalone Web App Meta Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Costco健身">
+  <link rel="apple-touch-icon" href="apple-touch-icon.jpg">
+  <link rel="apple-touch-icon" sizes="152x152" href="apple-touch-icon.jpg">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.jpg">
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Global Error Logger -->
@@ -743,6 +751,18 @@
                   📋 複製雙人共享網址
                 </button>
               </div>
+
+              <!-- PWA Installation Guide Card -->
+              <div class="costco-box sync-settings-box" style="border-color: rgba(16, 185, 129, 0.2); background: rgba(16, 185, 129, 0.02);">
+                <h3 style="color: #10b981;">📲 安裝為手機 App (iOS / Android)</h3>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                  將本網頁加入手機主畫面，即可像原生 App 一樣全螢幕啟動與離線快取使用！
+                </p>
+                <div style="font-size: 0.75rem; color: var(--text-main); line-height: 1.45;">
+                  🍏 <strong>蘋果 iOS (Safari)</strong>：點選下方的分享按鈕 <strong style="color: #38bdf8; font-size: 0.9rem;">📤</strong>，向下滾動並點選 <strong>「加入主畫面 ➕」</strong>。<br>
+                  🤖 <strong>安卓 Android (Chrome)</strong>：點選右上角選單，選擇 <strong>「新增至主畫面」</strong> 或 <strong>「安裝應用程式」</strong>。
+                </div>
+              </div>
             </div>
 
             <!-- Daily Recurring Meals Section -->
@@ -830,6 +850,6 @@
   </div>
 
   <!-- JavaScript logic -->
-  <script src="app.js?v=11"></script>
+  <script src="app.js?v=12"></script>
 </body>
 </html>

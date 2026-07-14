@@ -5,6 +5,27 @@
 
 ---
 
+## 2026-07-14 · 第十一輪：支援 PWA 技術轉化為蘋果 iOS/Android 手機 App
+
+### 問題
+使用者不希望每次都使用 Safari 等瀏覽器輸入網址連線網頁，希望本看看板能以類似「蘋果 iOS 應用程式 (App)」的形式出現在主畫面上，方便一鍵啟動與離線使用。
+
+### 修正
+| 檔案 | 內容 |
+|------|------|
+| `index.html` | 1. 於 `<head>` 區塊新增 PWA 清單檔案連結、蘋果 iOS 專屬獨立執行模式 (standalone) meta 標籤與 `apple-touch-icon` 圖示定義；<br>2. 於 Tab 5 (個人設定) 新增「📲 安裝為手機 App (iOS / Android)」指南卡片；<br>3. 更新快取版本號至 `v=12`； |
+| `manifest.json` | [NEW] 新增 PWA 設定檔，宣告應用程式全名、主題顏色、啟動路徑及對應 App 圖示。 |
+| `sw.js` | [NEW] 實作 PWA 離線快取 Service Worker，自動快取 HTML/CSS/JS/Icons/Manifest，並實作 Stale-While-Revalidate（背景異步更新快取）策略以達極速開啟與離線啟動。 |
+| `app.js` | 1. 於 `init()` 結尾新增 Service Worker 的自動檢測與註冊邏輯； |
+| `icon.jpg` / `apple-touch-icon.jpg` | [NEW] 使用 AI 生成工具設計高畫質 App 圖示（綠色酪梨 + 啞鈴，科技感深色背景）並存入專案根目錄。 |
+
+### 驗證（本地運行）
+- 偵測 Service Worker 註冊正常，在開發者工具 (Application -> Service Workers) 顯示 `sw.js` 運作中 ✓
+- 清單檔 (Manifest) 解析正常，各項標籤、顏色、全螢幕 (standalone) 屬性成功關聯 ✓
+- 使用手機 Safari 模擬器，於分享選單中順利讀取「加入主畫面」，點選後主畫面生成帶有專屬 App 圖示的捷徑，啟動時沒有瀏覽器網址列與底欄，外觀與原生 App 100% 相同 ✓
+
+---
+
 ## 2026-07-14 · 第十輪：運動項目名稱重構為「分類連動下拉選單」並內建「壺鈴搖擺」
 
 ### 問題
