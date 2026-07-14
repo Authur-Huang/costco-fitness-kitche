@@ -645,7 +645,11 @@ function setupLogFormListeners() {
     const date = workoutLogDate.value;
     const who = workoutLogWho.value;
     const type = workoutLogType.value;
-    const name = workoutLogName.value.trim();
+    let name = workoutLogName.value;
+    if (name === '其他 (自行輸入)') {
+      const customInput = document.getElementById('workout-log-name-custom');
+      name = customInput ? customInput.value.trim() : '自訂運動';
+    }
     const duration = parseFloat(workoutLogDuration.value) || 0;
     const load = parseFloat(workoutLogLoad.value) || 0;
     const intensity = workoutLogIntensity.value;
@@ -660,10 +664,11 @@ function setupLogFormListeners() {
     workoutLogLoad.value = '0';
     if (type === '健走步數') {
       workoutLogDuration.value = '10000';
-      workoutLogName.value = '每日健步';
     } else {
       workoutLogDuration.value = '30';
-      workoutLogName.value = '';
+    }
+    if (typeof updateWorkoutItemOptions === 'function') {
+      updateWorkoutItemOptions();
     }
 
     calculateBurnedCalories();
@@ -794,12 +799,16 @@ function setupWorkoutListeners() {
       const loadGroup = workoutLogLoad.closest('.form-group');
       const intensityGroup = workoutLogIntensity.closest('.form-group');
       
+      // Update items dropdown dynamically
+      if (typeof updateWorkoutItemOptions === 'function') {
+        updateWorkoutItemOptions();
+      }
+
       if (type === '健走步數') {
         if (durationLabel) durationLabel.innerHTML = '👣 走路步數 (步)';
         workoutLogDuration.value = 10000;
         workoutLogDuration.min = 1;
         workoutLogDuration.max = 100000;
-        workoutLogName.value = '每日健步';
         
         if (loadGroup) loadGroup.style.display = 'none';
         if (intensityGroup) intensityGroup.style.display = 'none';
@@ -808,14 +817,24 @@ function setupWorkoutListeners() {
         workoutLogDuration.value = 30;
         workoutLogDuration.min = 1;
         workoutLogDuration.max = 300;
-        if (workoutLogName.value === '每日健步') {
-          workoutLogName.value = '';
-        }
         
         if (loadGroup) loadGroup.style.display = 'block';
         if (intensityGroup) intensityGroup.style.display = 'block';
       }
     });
+
+    if (workoutLogName) {
+      workoutLogName.addEventListener('change', () => {
+        if (typeof handleWorkoutNameChange === 'function') {
+          handleWorkoutNameChange();
+        }
+      });
+    }
+
+    // Populate initial options
+    if (typeof updateWorkoutItemOptions === 'function') {
+      updateWorkoutItemOptions();
+    }
 
     // Initial calculation
     calculateBurnedCalories();
@@ -2494,5 +2513,66 @@ window.saveLogAsRecurring = function(index) {
   renderRecurringMealsList();
   alert(`已將「${cleanName}」成功設為每日固定/常用餐食！之後每天將自動為您登錄該餐點。`);
 };
+
+// 🏋️ Workout Items Dropdown Configurations & Dynamic Updates
+const workoutOptionsMap = {
+  '重量訓練': [
+    '深蹲', '臥推', '硬舉', '啞鈴二頭彎舉', '引體向上', '俯臥撐', '平板支撐', '其他 (自行輸入)'
+  ],
+  '有氧跑步': [
+    '戶外慢跑', '跑步機跑步', '路跑配速', '其他 (自行輸入)'
+  ],
+  '單車飛輪': [
+    '飛輪健身車', '公路單車', '其他 (自行輸入)'
+  ],
+  '游泳': [
+    '自由式游泳', '蛙式游泳', '其他 (自行輸入)'
+  ],
+  '瑜珈伸展': [
+    '哈達瑜珈', '流動瑜珈', '全身拉伸', '泡沫軸筋膜放鬆', '其他 (自行輸入)'
+  ],
+  '健走步數': [
+    '每日健步'
+  ],
+  '其他運動': [
+    '壺鈴搖擺', '波比跳', '開合跳', '登山者式', '高強度間歇 (HIIT)', '划船機', '其他 (自行輸入)'
+  ]
+};
+
+function updateWorkoutItemOptions() {
+  if (!workoutLogType || !workoutLogName) return;
+  const category = workoutLogType.value;
+  const items = workoutOptionsMap[category] || workoutOptionsMap['其他運動'];
+  
+  workoutLogName.innerHTML = '';
+  items.forEach(item => {
+    const opt = document.createElement('option');
+    opt.value = item;
+    opt.textContent = item;
+    workoutLogName.appendChild(opt);
+  });
+
+  handleWorkoutNameChange();
+}
+
+function handleWorkoutNameChange() {
+  if (!workoutLogName) return;
+  const nameSelect = workoutLogName.value;
+  const customInput = document.getElementById('workout-log-name-custom');
+  
+  if (nameSelect === '其他 (自行輸入)') {
+    if (customInput) {
+      customInput.style.display = 'block';
+      customInput.required = true;
+      customInput.value = '';
+    }
+  } else {
+    if (customInput) {
+      customInput.style.display = 'none';
+      customInput.required = false;
+      customInput.value = '';
+    }
+  }
+}
 
 window.onload = init;
