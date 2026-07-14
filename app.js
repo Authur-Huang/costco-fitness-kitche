@@ -656,10 +656,15 @@ function setupLogFormListeners() {
     fitnessDB.workoutLogs.sort((a,b) => b.date.localeCompare(a.date));
 
     // Reset
-    workoutLogName.value = '';
-    workoutLogLoad.value = '0';
     workoutLogDesc.value = '';
-    workoutLogDuration.value = '30';
+    workoutLogLoad.value = '0';
+    if (type === '健走步數') {
+      workoutLogDuration.value = '10000';
+      workoutLogName.value = '每日健步';
+    } else {
+      workoutLogDuration.value = '30';
+      workoutLogName.value = '';
+    }
 
     calculateBurnedCalories();
     calculateTargets();
@@ -783,6 +788,35 @@ function setupWorkoutListeners() {
     maleWeightInput.addEventListener('input', calculateBurnedCalories);
     femaleWeightInput.addEventListener('input', calculateBurnedCalories);
 
+    workoutLogType.addEventListener('change', () => {
+      const type = workoutLogType.value;
+      const durationLabel = document.querySelector('label[for="workout-log-duration"]');
+      const loadGroup = workoutLogLoad.closest('.form-group');
+      const intensityGroup = workoutLogIntensity.closest('.form-group');
+      
+      if (type === '健走步數') {
+        if (durationLabel) durationLabel.innerHTML = '👣 走路步數 (步)';
+        workoutLogDuration.value = 10000;
+        workoutLogDuration.min = 1;
+        workoutLogDuration.max = 100000;
+        workoutLogName.value = '每日健步';
+        
+        if (loadGroup) loadGroup.style.display = 'none';
+        if (intensityGroup) intensityGroup.style.display = 'none';
+      } else {
+        if (durationLabel) durationLabel.innerHTML = '⏱️ 運動時間 (分鐘)';
+        workoutLogDuration.value = 30;
+        workoutLogDuration.min = 1;
+        workoutLogDuration.max = 300;
+        if (workoutLogName.value === '每日健步') {
+          workoutLogName.value = '';
+        }
+        
+        if (loadGroup) loadGroup.style.display = 'block';
+        if (intensityGroup) intensityGroup.style.display = 'block';
+      }
+    });
+
     // Initial calculation
     calculateBurnedCalories();
   }
@@ -808,19 +842,25 @@ function calculateBurnedCalories() {
     weight = (mw + fw) / 2;
   }
   
-  // MET values
-  const selectedOpt = workoutLogType.options[workoutLogType.selectedIndex];
-  if (!selectedOpt) return;
-  const baseMet = parseFloat(selectedOpt.getAttribute('data-met')) || 4.0;
-  
-  // Intensity factor
-  const selectedIntensityOpt = workoutLogIntensity.options[workoutLogIntensity.selectedIndex];
-  const factor = selectedIntensityOpt ? parseFloat(selectedIntensityOpt.getAttribute('data-factor')) : 1.0;
-  
-  const met = baseMet * factor;
-  
-  // Calories = MET * (Weight + Load) * (Duration / 60)
-  const calories = Math.round(met * (weight + load) * (duration / 60));
+  let calories = 0;
+  if (type === '健走步數') {
+    // Calories = steps * 0.00055 * weight
+    calories = Math.round(duration * 0.00055 * weight);
+  } else {
+    // MET values
+    const selectedOpt = workoutLogType.options[workoutLogType.selectedIndex];
+    if (!selectedOpt) return;
+    const baseMet = parseFloat(selectedOpt.getAttribute('data-met')) || 4.0;
+    
+    // Intensity factor
+    const selectedIntensityOpt = workoutLogIntensity.options[workoutLogIntensity.selectedIndex];
+    const factor = selectedIntensityOpt ? parseFloat(selectedIntensityOpt.getAttribute('data-factor')) : 1.0;
+    
+    const met = baseMet * factor;
+    
+    // Calories = MET * (Weight + Load) * (Duration / 60)
+    calories = Math.round(met * (weight + load) * (duration / 60));
+  }
   workoutLogBurned.textContent = calories;
   
   // Dynamic Tip text
@@ -923,10 +963,13 @@ function renderHistoryTable() {
 
     fitnessDB.workoutLogs.forEach((item, index) => {
       const tr = document.createElement('tr');
+      const isSteps = item.type === '健走步數';
       const whoLabel = item.who === 'both' ? '👫 雙人' : (item.who === 'male' ? '🙋‍♂️ 男生' : '🙋‍♀️ 女生');
       const loadDesc = item.load ? ` / 負重 ${item.load}kg` : '';
       const intensityDesc = item.intensity ? ` / ${escapeHTML(item.intensity)}` : '';
-      const timeDesc = `${item.duration || 30} 分鐘${loadDesc}${intensityDesc}${item.desc ? ` / ${escapeHTML(item.desc)}` : ''}`;
+      const timeDesc = isSteps 
+        ? `${item.duration || 0} 步${item.desc ? ` / ${escapeHTML(item.desc)}` : ''}`
+        : `${item.duration || 30} 分鐘${loadDesc}${intensityDesc}${item.desc ? ` / ${escapeHTML(item.desc)}` : ''}`;
       const calDesc = `${item.burnedCal || 0} kcal`;
       tr.innerHTML = `
         <td>${escapeHTML(item.date)}</td>
