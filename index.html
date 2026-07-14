@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=8">
+  <link rel="stylesheet" href="style.css?v=9">
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Global Error Logger -->
@@ -418,8 +418,39 @@
           </section>
         </div>
 
-        <!-- Tab 2: Shared Daily Log -->
+        <!-- Tab 3: Shared Daily Log -->
         <div class="tab-pane" id="pane-log">
+          <!-- Quick Log Breakfast: Energy Bowl -->
+          <div style="margin-top: 1.5rem; display: flex; justify-content: center; margin-bottom: 1.5rem;">
+            <section class="log-section" style="width: 100%; max-width: 600px;">
+              <h2>🥣 一鍵快速登錄「能量碗」早餐</h2>
+              <p class="section-desc">直接點選即可快速在日誌中登錄您與伴侶的招牌能量碗早餐！</p>
+              
+              <form id="quick-energy-bowl-form" class="log-form-stacked" style="background: rgba(15, 23, 42, 0.4); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-top: 1rem;">
+                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                  <div style="flex: 1.5; min-width: 200px;">
+                    <label for="energy-bowl-who" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem; display: block;">👥 選擇登錄對象</label>
+                    <select id="energy-bowl-who" style="width: 100%; background: rgba(15, 23, 42, 0.8); border-color: var(--border-color); color: var(--text-main); font-size: 0.9rem; padding: 0.45rem; border-radius: 6px;">
+                      <option value="female">🙋‍♀️ 女生能量碗 (448 kcal)</option>
+                      <option value="male">🙋‍♂️ 男生能量碗 (896 kcal)</option>
+                      <option value="both">👫 雙人能量碗 (各自登錄)</option>
+                    </select>
+                  </div>
+                  <div style="flex: 1.2; min-width: 150px;">
+                    <label for="energy-bowl-date" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem; display: block;">📅 選擇日期</label>
+                    <input type="date" id="energy-bowl-date" style="width: 100%; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; padding: 0.4rem 0.5rem; font-size: 0.9rem;">
+                  </div>
+                  <div style="flex: 0.8; min-width: 80px; padding-top: 1.2rem;">
+                    <button type="submit" class="ai-action-btn success" style="width: 100%; padding: 0.45rem 0.75rem; font-size: 0.9rem; border-radius: 6px; position: static;">🍳 登錄</button>
+                  </div>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.5rem;">
+                  <strong>💡 能量碗配比：</strong> 蛋白粉 30g、芝麻粉 15g、奇亞籽 5g、燕麥片 15g、優格穀片 10g、綜合穀片 6g、莓果 30g、無糖豆漿 150g、優格 30g (男生份量為女生的一倍)。
+                </div>
+              </form>
+            </section>
+          </div>
+
           <!-- Add Workout Card -->
           <div style="margin-top: 2rem; display: flex; justify-content: center;">
             <!-- Add Workout Log -->
@@ -795,6 +826,6 @@
   </div>
 
   <!-- JavaScript logic -->
-  <script src="app.js?v=8"></script>
+  <script src="app.js?v=9"></script>
 </body>
 </html>

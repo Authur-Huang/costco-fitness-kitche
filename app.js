@@ -254,6 +254,11 @@ const recMealF = document.getElementById('rec-meal-f');
 const recMealFiber = document.getElementById('rec-meal-fiber');
 const recMealSodium = document.getElementById('rec-meal-sodium');
 
+// Quick Log Energy Bowl Elements
+const quickEnergyBowlForm = document.getElementById('quick-energy-bowl-form');
+const energyBowlWho = document.getElementById('energy-bowl-who');
+const energyBowlDate = document.getElementById('energy-bowl-date');
+
 // Navigation Tabs
 const navTabKitchen = document.getElementById('tab-nav-kitchen');
 const navTabRecipes = document.getElementById('tab-nav-recipes');
@@ -375,6 +380,7 @@ function setDefaultDates() {
   aiLogDate.value = today;
   if (chartMaleDate) chartMaleDate.value = today;
   if (chartFemaleDate) chartFemaleDate.value = today;
+  if (energyBowlDate) energyBowlDate.value = today;
 }
 
 // Keep on-screen dates in sync with the device clock. When the local date
@@ -388,7 +394,7 @@ function syncDatesWithDevice() {
   const today = getLocalDateStr();
   if (today === lastKnownDate) return;
 
-  [workoutLogDate, aiLogDate, chartMaleDate, chartFemaleDate].forEach(input => {
+  [workoutLogDate, aiLogDate, chartMaleDate, chartFemaleDate, energyBowlDate].forEach(input => {
     if (input && (!input.value || input.value === lastKnownDate)) {
       input.value = today;
     }
@@ -471,6 +477,73 @@ function setupEventListeners() {
       saveSharedData();
       renderRecurringMealsList();
       alert(`已成功新增每日固定餐食範本「${name}」！`);
+    });
+  }
+
+  if (quickEnergyBowlForm) {
+    quickEnergyBowlForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const targetWho = energyBowlWho.value;
+      const targetDate = energyBowlDate.value || getLocalDateStr();
+
+      const femaleSpec = {
+        name: '能量碗 (自調配比)',
+        cal: 448,
+        p: 39.3,
+        c: 36.1,
+        f: 17.6,
+        fiber: 7.5,
+        sodium: 215
+      };
+
+      const addBowlLog = (who, spec) => {
+        fitnessDB.foodLogs.push({
+          date: targetDate,
+          who: who,
+          meal: '早餐',
+          name: spec.name,
+          cal: spec.cal,
+          p: spec.p,
+          c: spec.c,
+          f: spec.f,
+          fiber: spec.fiber,
+          sodium: spec.sodium
+        });
+      };
+
+      if (targetWho === 'female') {
+        addBowlLog('female', femaleSpec);
+      } else if (targetWho === 'male') {
+        addBowlLog('male', {
+          name: '能量碗 (自調配比)',
+          cal: 896,
+          p: 78.6,
+          c: 72.2,
+          f: 35.2,
+          fiber: 15.0,
+          sodium: 430
+        });
+      } else if (targetWho === 'both') {
+        addBowlLog('female', femaleSpec);
+        addBowlLog('male', {
+          name: '能量碗 (自調配比)',
+          cal: 896,
+          p: 78.6,
+          c: 72.2,
+          f: 35.2,
+          fiber: 15.0,
+          sodium: 430
+        });
+      }
+
+      fitnessDB.foodLogs.sort((a, b) => b.date.localeCompare(a.date));
+
+      calculateTargets();
+      saveSharedData();
+      renderHistoryTable();
+
+      const whoLabel = targetWho === 'both' ? '👫 雙人' : (targetWho === 'male' ? '🙋‍♂️ 男生' : '🙋‍♀️ 女生');
+      alert(`已成功將 ${whoLabel} 能量碗早餐登錄至 ${targetDate} 的飲食日誌！`);
     });
   }
 }
@@ -2096,6 +2169,40 @@ async function loadSharedData() {
       { name: "新鮮雞蛋", total: 30, remaining: 18, unit: "顆" },
       { name: "冷凍毛豆仁", total: 1000, remaining: 850, unit: "g" }
     ];
+  }
+
+  // Seed default recurring meals if list is empty
+  fitnessDB.recurringMeals = fitnessDB.recurringMeals || [];
+  if (fitnessDB.recurringMeals.length === 0) {
+    fitnessDB.recurringMeals = [
+      {
+        id: 'rec_default_female_bowl',
+        who: 'female',
+        meal: '早餐',
+        name: '能量碗',
+        cal: 448,
+        p: 39.3,
+        c: 36.1,
+        f: 17.6,
+        fiber: 7.5,
+        sodium: 215,
+        active: true
+      },
+      {
+        id: 'rec_default_male_bowl',
+        who: 'male',
+        meal: '早餐',
+        name: '能量碗',
+        cal: 896,
+        p: 78.6,
+        c: 72.2,
+        f: 35.2,
+        fiber: 15.0,
+        sodium: 430,
+        active: true
+      }
+    ];
+    saveSharedData();
   }
 
   // Persist migrated legacy data under the new private key right away
