@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=8">
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Global Error Logger -->
@@ -211,6 +211,10 @@
                   </div>
                   <div class="results-summary">
                     <p>總計：熱量 <span id="total-anal-cal">0</span> kcal | 蛋白質 <span id="total-anal-p">0</span>g | 碳水 <span id="total-anal-c">0</span>g | 脂肪 <span id="total-anal-f">0</span>g | 纖維 <span id="total-anal-fiber">0</span>g | 鈉 <span id="total-anal-sodium">0</span>mg</p>
+                  </div>
+                  <div style="margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem; justify-content: flex-end;">
+                    <input type="checkbox" id="ai-save-as-recurring" style="width: 16px; height: 16px; cursor: pointer;">
+                    <label for="ai-save-as-recurring" style="font-size: 0.85rem; color: var(--text-main); cursor: pointer; user-select: none;">🔁 同步設為「每日固定餐點」範本</label>
                   </div>
                   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.25rem;">
                     <button class="ai-action-btn success" id="import-ingredients-btn" style="width: 100%;">📥 匯入至飲食日誌</button>
@@ -705,12 +709,92 @@
                 </button>
               </div>
             </div>
+
+            <!-- Daily Recurring Meals Section -->
+            <section class="log-section" style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 2rem;">
+              <h2>🍳 每日固定/常規餐食範本</h2>
+              <p class="section-desc">在此處設定您與伴侶每天固定會吃的食物（例如早餐的麥片牛奶、或固定便當），系統每天會自動在日誌中生成，無須重複輸入！</p>
+              
+              <div class="inventory-split-grid" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.5rem; margin-top: 1.5rem;">
+                <!-- Left Column: Settings List -->
+                <div class="costco-box" style="margin-bottom: 0;">
+                  <h3>📋 已設定的固定餐食清單</h3>
+                  <div id="recurring-meals-list" style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem; max-height: 450px; overflow-y: auto; padding-right: 0.25rem;">
+                    <!-- Dynamically populated -->
+                  </div>
+                </div>
+
+                <!-- Right Column: Add Form -->
+                <div class="costco-box" style="margin-bottom: 0;">
+                  <h3>➕ 新增每日固定餐食</h3>
+                  <form id="add-recurring-meal-form" class="log-form-stacked" style="margin-top: 1rem;">
+                    <div class="form-group-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                      <div class="form-group">
+                        <label for="rec-meal-who">👥 適用對象</label>
+                        <select id="rec-meal-who" style="width: 100%; background: rgba(15, 23, 42, 0.8); border-color: var(--border-color); color: var(--text-main); font-size: 0.9rem; padding: 0.4rem; border-radius: 6px;">
+                          <option value="both">👫 雙人共餐 (均分)</option>
+                          <option value="male">🙋‍♂️ 男生專屬</option>
+                          <option value="female">🙋‍♀️ 女生專屬</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label for="rec-meal-category">🍽️ 餐別</label>
+                        <select id="rec-meal-category" style="width: 100%; background: rgba(15, 23, 42, 0.8); border-color: var(--border-color); color: var(--text-main); font-size: 0.9rem; padding: 0.4rem; border-radius: 6px;">
+                          <option value="早餐">早餐</option>
+                          <option value="午餐">午餐</option>
+                          <option value="晚餐">晚餐</option>
+                          <option value="點心">點心</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 0.75rem;">
+                      <label for="rec-meal-name">食物名稱 / 餐點組合</label>
+                      <input type="text" id="rec-meal-name" placeholder="例如：經典燕麥豆奶大燕麥片碗" required style="width: 100%; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.95rem;">
+                    </div>
+
+                    <div class="form-group-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem;">
+                      <div class="form-group">
+                        <label for="rec-meal-cal">熱量 (kcal)</label>
+                        <input type="number" id="rec-meal-cal" placeholder="例如：350" required style="width: 100%; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.95rem;">
+                      </div>
+                      <div class="form-group">
+                        <label for="rec-meal-p">蛋白質 (g)</label>
+                        <input type="number" id="rec-meal-p" step="0.1" placeholder="例如：20" required style="width: 100%; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.95rem;">
+                      </div>
+                    </div>
+
+                    <div class="form-group-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin-top: 0.75rem;">
+                      <div class="form-group">
+                        <label for="rec-meal-c">碳水 (g)</label>
+                        <input type="number" id="rec-meal-c" step="0.1" placeholder="30" style="width: 100%; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.95rem;">
+                      </div>
+                      <div class="form-group">
+                        <label for="rec-meal-f">脂肪 (g)</label>
+                        <input type="number" id="rec-meal-f" step="0.1" placeholder="10" style="width: 100%; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.95rem;">
+                      </div>
+                      <div class="form-group">
+                        <label for="rec-meal-fiber">纖維 (g)</label>
+                        <input type="number" id="rec-meal-fiber" step="0.1" placeholder="5" style="width: 100%; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.95rem;">
+                      </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 0.75rem;">
+                      <label for="rec-meal-sodium">鈉含量 (mg)</label>
+                      <input type="number" id="rec-meal-sodium" placeholder="150" style="width: 100%; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.95rem;">
+                    </div>
+
+                    <button type="submit" class="ai-action-btn success" style="width: 100%; margin-top: 1.25rem;">➕ 儲存為每日固定餐點</button>
+                  </form>
+                </div>
+              </div>
+            </section>
           </section>
         </div>
     </main>
   </div>
 
   <!-- JavaScript logic -->
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>

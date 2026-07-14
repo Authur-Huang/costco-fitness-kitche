@@ -160,7 +160,7 @@ function buildShareLink() {
 }
 
 function hasAnyContent(db) {
-  return !!db && ['maleWeightHistory', 'femaleWeightHistory', 'foodLogs', 'workoutLogs', 'costcoInventory']
+  return !!db && ['maleWeightHistory', 'femaleWeightHistory', 'foodLogs', 'workoutLogs', 'costcoInventory', 'recurringMeals']
     .some(k => Array.isArray(db[k]) && db[k].length > 0);
 }
 
@@ -170,7 +170,8 @@ let fitnessDB = {
   femaleWeightHistory: [], // { date, weight, fat }
   foodLogs: [],            // { date, who, meal, name, cal, p }
   workoutLogs: [],          // { date, who, name, desc }
-  costcoInventory: []      // { name, total, remaining, unit }
+  costcoInventory: [],      // { name, total, remaining, unit }
+  recurringMeals: []       // { id, who, meal, name, cal, p, c, f, fiber, sodium, active }
 };
 
 // Chart instances
@@ -238,6 +239,20 @@ const aiTargetWho = document.getElementById('ai-target-who');
 const aiMealCategory = document.getElementById('ai-meal-category');
 const aiLogDate = document.getElementById('ai-log-date');
 const imageOverlayContainer = document.getElementById('image-overlay-container');
+const aiSaveAsRecurring = document.getElementById('ai-save-as-recurring');
+
+// Recurring Meals Elements
+const recurringMealsList = document.getElementById('recurring-meals-list');
+const addRecurringMealForm = document.getElementById('add-recurring-meal-form');
+const recMealWho = document.getElementById('rec-meal-who');
+const recMealCategory = document.getElementById('rec-meal-category');
+const recMealName = document.getElementById('rec-meal-name');
+const recMealCal = document.getElementById('rec-meal-cal');
+const recMealP = document.getElementById('rec-meal-p');
+const recMealC = document.getElementById('rec-meal-c');
+const recMealF = document.getElementById('rec-meal-f');
+const recMealFiber = document.getElementById('rec-meal-fiber');
+const recMealSodium = document.getElementById('rec-meal-sodium');
 
 // Navigation Tabs
 const navTabKitchen = document.getElementById('tab-nav-kitchen');
@@ -411,6 +426,53 @@ function setupEventListeners() {
     navigator.clipboard.writeText(buildShareLink());
     alert('已複製共享網址（內含你們專屬的同步金鑰）！\n請只發送給您的伴侶，開啟後即可實時同步健身日誌。');
   });
+
+  if (addRecurringMealForm) {
+    addRecurringMealForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const who = recMealWho.value;
+      const meal = recMealCategory.value;
+      const name = recMealName.value.trim();
+      const cal = parseFloat(recMealCal.value) || 0;
+      const p = parseFloat(recMealP.value) || 0;
+      const c = parseFloat(recMealC.value) || 0;
+      const f = parseFloat(recMealF.value) || 0;
+      const fiber = parseFloat(recMealFiber.value) || 0;
+      const sodium = parseFloat(recMealSodium.value) || 0;
+
+      if (!name || cal <= 0) return;
+
+      const newId = 'rec_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+      fitnessDB.recurringMeals = fitnessDB.recurringMeals || [];
+      fitnessDB.recurringMeals.push({
+        id: newId,
+        who,
+        meal,
+        name,
+        cal,
+        p,
+        c,
+        f,
+        fiber,
+        sodium,
+        active: true
+      });
+
+      // Clear form inputs
+      recMealName.value = '';
+      recMealCal.value = '';
+      recMealP.value = '';
+      recMealC.value = '';
+      recMealF.value = '';
+      recMealFiber.value = '';
+      recMealSodium.value = '';
+
+      calculateTargets();
+      saveSharedData();
+      renderRecurringMealsList();
+      alert(`已成功新增每日固定餐食範本「${name}」！`);
+    });
+  }
 }
 
 // Setup AI Event Listeners
@@ -759,7 +821,12 @@ function renderHistoryTable() {
         <td>${item.p}g</td>
         <td>${item.c != null ? item.c + 'g' : '-'}</td>
         <td>${item.f != null ? item.f + 'g' : '-'}</td>
-        <td><button class="remove-btn" style="position:static; padding:0.2rem 0.5rem;" onclick="deleteLogItem('food', ${index})">🗑️ 刪除</button></td>
+        <td>
+          <div style="display: flex; gap: 0.35rem; justify-content: center;">
+            <button class="remove-btn" style="position:static; padding:0.2rem 0.4rem; font-size: 0.75rem; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2);" onclick="saveLogAsRecurring(${index})">🔁 設為固定</button>
+            <button class="remove-btn" style="position:static; padding:0.2rem 0.4rem; font-size: 0.75rem;" onclick="deleteLogItem('food', ${index})">🗑️ 刪除</button>
+          </div>
+        </td>
       `;
       body.appendChild(tr);
     });
@@ -844,6 +911,16 @@ function renderHistoryTable() {
 window.deleteLogItem = function(type, index) {
   if (!confirm('確定要刪除此筆記錄嗎？')) return;
   if (type === 'food') {
+    const deletedLog = fitnessDB.foodLogs[index];
+    if (deletedLog && deletedLog.recurringId) {
+      fitnessDB.settings = fitnessDB.settings || {};
+      fitnessDB.settings.skippedRecurring = fitnessDB.settings.skippedRecurring || {};
+      const dateStr = deletedLog.date;
+      fitnessDB.settings.skippedRecurring[dateStr] = fitnessDB.settings.skippedRecurring[dateStr] || [];
+      if (!fitnessDB.settings.skippedRecurring[dateStr].includes(deletedLog.recurringId)) {
+        fitnessDB.settings.skippedRecurring[dateStr].push(deletedLog.recurringId);
+      }
+    }
     fitnessDB.foodLogs.splice(index, 1);
   } else if (type === 'workout') {
     fitnessDB.workoutLogs.splice(index, 1);
@@ -978,6 +1055,10 @@ function computeTodayTotals() {
 
 // Calculate calorie goals and refresh every tab that displays today's intake
 function calculateTargets() {
+  if (typeof checkAndLogRecurringMeals === 'function') {
+    checkAndLogRecurringMeals();
+  }
+
   const mT = getNutritionTargets('male');
   const fT = getNutritionTargets('female');
 
@@ -1551,17 +1632,43 @@ function importIngredientsToLogs() {
   });
   itemsStr = itemsStr.slice(0, -1); // remove trailing +
 
+  let newRecurringId = null;
+
+  // If set to save as recurring meal
+  if (aiSaveAsRecurring && aiSaveAsRecurring.checked) {
+    const newId = 'rec_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+    newRecurringId = newId;
+
+    fitnessDB.recurringMeals = fitnessDB.recurringMeals || [];
+    fitnessDB.recurringMeals.push({
+      id: newId,
+      who: targetWho,
+      meal: targetMeal,
+      name: `AI匯入: ${itemsStr}`,
+      cal: Math.round(totalCal),
+      p: round1(totalP),
+      c: round1(totalC),
+      f: round1(totalF),
+      fiber: round1(totalFiber),
+      sodium: Math.round(totalSodium),
+      active: true
+    });
+    aiSaveAsRecurring.checked = false; // Reset checkbox
+    renderRecurringMealsList();
+  }
+
   fitnessDB.foodLogs.push({
     date: dateStr,
     who: targetWho,
     meal: targetMeal,
-    name: `AI匯入: ${itemsStr}`,
+    name: newRecurringId ? `[固定] AI匯入: ${itemsStr}` : `AI匯入: ${itemsStr}`,
     cal: Math.round(totalCal),
     p: round1(totalP),
     c: round1(totalC),
     f: round1(totalF),
     fiber: round1(totalFiber),
-    sodium: Math.round(totalSodium)
+    sodium: Math.round(totalSodium),
+    recurringId: newRecurringId
   });
 
   fitnessDB.foodLogs.sort((a,b) => b.date.localeCompare(a.date));
@@ -1952,6 +2059,8 @@ async function loadSharedData() {
       if (cloudData.foodLogs) fitnessDB.foodLogs = cloudData.foodLogs;
       if (cloudData.workoutLogs) fitnessDB.workoutLogs = cloudData.workoutLogs;
       if (cloudData.costcoInventory) fitnessDB.costcoInventory = cloudData.costcoInventory;
+      if (cloudData.recurringMeals) fitnessDB.recurringMeals = cloudData.recurringMeals;
+      if (cloudData.settings) fitnessDB.settings = cloudData.settings;
       
       // Sync sidebar current weight with the latest record
       // (target fields stay as user-set goals)
@@ -1998,6 +2107,9 @@ async function loadSharedData() {
   calculateTargets();
   updateRecipes();
   renderHistoryTable();
+  if (typeof renderRecurringMealsList === 'function') {
+    renderRecurringMealsList();
+  }
 }
 
 // Call /api/save to push updates to Vercel KV
@@ -2080,5 +2192,157 @@ function loadFromLocalStorage() {
     }
   }
 }
+
+// 🗓️ Daily Recurring/Fixed Meals Engine
+function checkAndLogRecurringMeals(targetDateStr) {
+  const todayStr = targetDateStr || getLocalDateStr();
+  
+  fitnessDB.recurringMeals = fitnessDB.recurringMeals || [];
+  fitnessDB.settings = fitnessDB.settings || {};
+  fitnessDB.settings.skippedRecurring = fitnessDB.settings.skippedRecurring || {};
+
+  const skipped = fitnessDB.settings.skippedRecurring[todayStr] || [];
+  let addedAny = false;
+
+  fitnessDB.recurringMeals.forEach(rec => {
+    if (rec.active === false) return;
+    if (skipped.includes(rec.id)) return;
+
+    // Check if already logged for this date and recurring ID
+    const alreadyLogged = fitnessDB.foodLogs.some(log => log.date === todayStr && log.recurringId === rec.id);
+    if (!alreadyLogged) {
+      fitnessDB.foodLogs.push({
+        date: todayStr,
+        who: rec.who,
+        meal: rec.meal,
+        name: `[固定] ${rec.name}`,
+        cal: Math.round(rec.cal) || 0,
+        p: round1(rec.p) || 0,
+        c: round1(rec.c) || 0,
+        f: round1(rec.f) || 0,
+        fiber: round1(rec.fiber) || 0,
+        sodium: Math.round(rec.sodium) || 0,
+        recurringId: rec.id
+      });
+      addedAny = true;
+    }
+  });
+
+  if (addedAny) {
+    fitnessDB.foodLogs.sort((a, b) => b.date.localeCompare(a.date));
+    saveSharedData();
+  }
+}
+
+function renderRecurringMealsList() {
+  if (!recurringMealsList) return;
+  recurringMealsList.innerHTML = '';
+
+  fitnessDB.recurringMeals = fitnessDB.recurringMeals || [];
+
+  if (fitnessDB.recurringMeals.length === 0) {
+    recurringMealsList.innerHTML = `
+      <div style="text-align: center; color: var(--text-muted); padding: 2rem 0; font-size: 0.85rem;">
+        🥣 尚無固定餐食範本，請從右側新增，或從飲食日誌中「設為固定」！
+      </div>
+    `;
+    return;
+  }
+
+  fitnessDB.recurringMeals.forEach((rec, idx) => {
+    const whoLabel = rec.who === 'both' ? '👫 雙人' : (rec.who === 'male' ? '🙋‍♂️ 男生' : '🙋‍♀️ 女生');
+    const itemDiv = document.createElement('div');
+    itemDiv.style.background = 'rgba(15, 23, 42, 0.4)';
+    itemDiv.style.padding = '0.75rem 1rem';
+    itemDiv.style.borderRadius = '8px';
+    itemDiv.style.border = '1px solid rgba(255, 255, 255, 0.05)';
+    itemDiv.style.display = 'flex';
+    itemDiv.style.flexDirection = 'column';
+    itemDiv.style.gap = '0.4rem';
+
+    itemDiv.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <input type="checkbox" id="chk-rec-${rec.id}" ${rec.active ? 'checked' : ''} onchange="toggleRecurringMeal('${rec.id}', this.checked)" style="width: 15px; height: 15px; cursor: pointer;">
+          <strong style="font-size: 0.9rem; color: var(--text-main);">${escapeHTML(rec.name)}</strong>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 0.75rem; background: rgba(255, 255, 255, 0.1); padding: 0.1rem 0.4rem; border-radius: 4px; color: var(--text-muted);">${whoLabel} · ${escapeHTML(rec.meal)}</span>
+          <button class="remove-btn" style="position: static; padding: 0.2rem 0.4rem; font-size: 0.75rem; border-radius: 4px;" onclick="deleteRecurringMeal('${rec.id}')">🗑️</button>
+        </div>
+      </div>
+      <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 0.75rem; padding-left: 1.5rem;">
+        <span>🔥 熱量: ${rec.cal} kcal</span>
+        <span>🥩 蛋白: ${rec.p}g</span>
+        <span>🍚 碳水: ${rec.c}g</span>
+        <span>🥑 脂肪: ${rec.f}g</span>
+        <span>🥬 纖維: ${rec.fiber}g</span>
+        <span>🧂 鈉: ${rec.sodium}mg</span>
+      </div>
+    `;
+    recurringMealsList.appendChild(itemDiv);
+  });
+}
+
+window.toggleRecurringMeal = function(id, activeState) {
+  fitnessDB.recurringMeals = fitnessDB.recurringMeals || [];
+  const found = fitnessDB.recurringMeals.find(r => r.id === id);
+  if (found) {
+    found.active = activeState;
+    saveSharedData();
+    calculateTargets(); // Will automatically remove or re-apply for today based on activeState
+    renderRecurringMealsList();
+  }
+};
+
+window.deleteRecurringMeal = function(id) {
+  fitnessDB.recurringMeals = fitnessDB.recurringMeals || [];
+  const found = fitnessDB.recurringMeals.find(r => r.id === id);
+  if (found) {
+    if (confirm(`確定要刪除「${found.name}」固定餐食範本嗎？\n(已生成的歷史記錄不會受到影響)`)) {
+      fitnessDB.recurringMeals = fitnessDB.recurringMeals.filter(r => r.id !== id);
+      saveSharedData();
+      calculateTargets();
+      renderRecurringMealsList();
+    }
+  }
+};
+
+window.saveLogAsRecurring = function(index) {
+  const item = fitnessDB.foodLogs[index];
+  if (!item) return;
+
+  let cleanName = item.name;
+  if (cleanName.startsWith('[固定] ')) {
+    cleanName = cleanName.substring(5);
+  }
+
+  fitnessDB.recurringMeals = fitnessDB.recurringMeals || [];
+  const duplicate = fitnessDB.recurringMeals.find(r => r.name === cleanName && r.meal === item.meal && r.who === item.who);
+  if (duplicate) {
+    alert(`此餐食「${cleanName}」已經存在於每日固定餐食清單中。`);
+    return;
+  }
+
+  const newId = 'rec_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+
+  fitnessDB.recurringMeals.push({
+    id: newId,
+    who: item.who,
+    meal: item.meal,
+    name: cleanName,
+    cal: item.cal || 0,
+    p: item.p || 0,
+    c: item.c || 0,
+    f: item.f || 0,
+    fiber: item.fiber || 0,
+    sodium: item.sodium || 0,
+    active: true
+  });
+
+  saveSharedData();
+  renderRecurringMealsList();
+  alert(`已將「${cleanName}」成功設為每日固定/常用餐食！之後每天將自動為您登錄該餐點。`);
+};
 
 window.onload = init;
