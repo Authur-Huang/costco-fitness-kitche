@@ -470,6 +470,29 @@ body {
 
 .recipe-content {
   padding: 1.5rem;
+  display: none;
+}
+
+.recipe-card.expanded .recipe-content {
+  display: block;
+}
+
+.recipe-expand-hint {
+  position: relative;
+  z-index: 2;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 0.35rem;
+  font-weight: 500;
+  display: block;
+}
+
+.recipe-card .recipe-expand-hint::before {
+  content: '👇 點擊展開食譜食材與步驟';
+}
+
+.recipe-card.expanded .recipe-expand-hint::before {
+  content: '👆 點擊收合食譜細節';
 }
 
 .recipe-equipment {

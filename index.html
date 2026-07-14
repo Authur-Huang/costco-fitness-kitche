@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=13">
+  <link rel="stylesheet" href="style.css?v=14">
   <!-- PWA & Apple iOS Standalone Web App Meta Tags -->
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -309,10 +309,11 @@
             <div class="recipe-grid">
               <!-- Recipe 1: Breakfast Oats -->
               <div class="recipe-card">
-                <div class="recipe-img-placeholder breakfast-bg">
+                <div class="recipe-img-placeholder breakfast-bg" onclick="toggleRecipe(this)" style="cursor: pointer;">
                   <span class="recipe-badge">早餐</span>
                   <span class="recipe-time">⏱️ 5 分鐘</span>
                   <h3>香蕉花生醬燕麥粥</h3>
+                  <div class="recipe-expand-hint"></div>
                 </div>
                 <div class="recipe-content">
                   <div class="recipe-equipment">
@@ -338,10 +339,11 @@
 
               <!-- Recipe 2: Patty -->
               <div class="recipe-card">
-                <div class="recipe-img-placeholder patty-bg">
+                <div class="recipe-img-placeholder patty-bg" onclick="toggleRecipe(this)" style="cursor: pointer;">
                   <span class="recipe-badge">午餐</span>
                   <span class="recipe-time">⏱️ 20 分鐘</span>
                   <h3>洋蔥豆腐雞肉餅</h3>
+                  <div class="recipe-expand-hint"></div>
                 </div>
                 <div class="recipe-content">
                   <div class="recipe-equipment">
@@ -367,10 +369,11 @@
 
               <!-- Recipe 3: Chicken leg -->
               <div class="recipe-card">
-                <div class="recipe-img-placeholder chicken-bg">
+                <div class="recipe-img-placeholder chicken-bg" onclick="toggleRecipe(this)" style="cursor: pointer;">
                   <span class="recipe-badge">晚餐</span>
                   <span class="recipe-time">⏱️ 25 分鐘</span>
                   <h3>蒜香嫩煎雞腿肉</h3>
+                  <div class="recipe-expand-hint"></div>
                 </div>
                 <div class="recipe-content">
                   <div class="recipe-equipment">
@@ -396,10 +399,11 @@
 
               <!-- Recipe 4: Edamame Egg -->
               <div class="recipe-card">
-                <div class="recipe-img-placeholder egg-bg">
+                <div class="recipe-img-placeholder egg-bg" onclick="toggleRecipe(this)" style="cursor: pointer;">
                   <span class="recipe-badge">配餐/晚餐</span>
                   <span class="recipe-time">⏱️ 10 分鐘</span>
                   <h3>毛豆滑蛋炒洋蔥</h3>
+                  <div class="recipe-expand-hint"></div>
                 </div>
                 <div class="recipe-content">
                   <div class="recipe-equipment">
@@ -603,16 +607,6 @@
                 <h4 class="nutrient-breakdown-title">🥗 今日營養素攝取進度</h4>
                 <div class="nutrient-breakdown" id="m-nutrient-rows"></div>
 
-                <!-- Quick Logger -->
-                <form id="chart-male-weight-form" class="log-form-stacked" style="background: rgba(15, 23, 42, 0.3); padding: 0.75rem; border-radius: 8px;">
-                  <h4 style="margin: 0 0 0.5rem 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">⚖️ 快速登記今日體重與體脂</h4>
-                  <div class="quick-log-row">
-                    <input type="date" id="chart-male-date" required class="quick-log-date">
-                    <input type="number" id="chart-male-w" step="0.1" placeholder="體重 kg" required class="quick-log-num">
-                    <input type="number" id="chart-male-f" step="0.1" placeholder="體脂 %" class="quick-log-num">
-                    <button type="submit" class="ai-action-btn primary quick-log-btn">💾 記錄</button>
-                  </div>
-                </form>
               </div>
 
               <!-- Female Balance Sheet -->
@@ -643,17 +637,27 @@
                 <h4 class="nutrient-breakdown-title">🥗 今日營養素攝取進度</h4>
                 <div class="nutrient-breakdown" id="f-nutrient-rows"></div>
 
-                <!-- Quick Logger -->
-                <form id="chart-female-weight-form" class="log-form-stacked" style="background: rgba(15, 23, 42, 0.3); padding: 0.75rem; border-radius: 8px;">
-                  <h4 style="margin: 0 0 0.5rem 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">⚖️ 快速登記今日體重與體脂</h4>
-                  <div class="quick-log-row">
-                    <input type="date" id="chart-female-date" required class="quick-log-date">
-                    <input type="number" id="chart-female-w" step="0.1" placeholder="體重 kg" required class="quick-log-num">
-                    <input type="number" id="chart-female-f" step="0.1" placeholder="體脂 %" class="quick-log-num">
-                    <button type="submit" class="ai-action-btn primary quick-log-btn">💾 記錄</button>
-                  </div>
-                </form>
               </div>
+            </div>
+
+            <!-- Unified Weight & Fat Logger Card -->
+            <div style="background: rgba(15, 23, 42, 0.25); padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-top: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+              <div style="min-width: 250px;">
+                <h3 style="margin: 0; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 0.5rem;">
+                  ⚖️ 雙人體重體脂快速登錄
+                </h3>
+                <p style="margin: 0.25rem 0 0 0; font-size: 0.75rem; color: var(--text-muted);">選擇對象與日期，記錄每日體重體脂變化。</p>
+              </div>
+              <form id="unified-weight-log-form" class="quick-log-row" style="flex: 1; display: flex; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap; min-width: 280px; align-items: center; margin: 0;">
+                <select id="weight-log-who" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.85rem; padding: 0.4rem 0.5rem; border-radius: 6px; cursor: pointer; height: 34px; box-sizing: border-box;">
+                  <option value="male">🙋‍♂️ 男生</option>
+                  <option value="female">🙋‍♀️ 女生</option>
+                </select>
+                <input type="date" id="weight-log-date" required style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.85rem; padding: 0.35rem 0.5rem; border-radius: 6px; width: 130px; height: 34px; box-sizing: border-box;">
+                <input type="number" id="weight-log-val" step="0.1" placeholder="體重 kg" required style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.85rem; padding: 0.35rem 0.5rem; border-radius: 6px; width: 85px; height: 34px; box-sizing: border-box;">
+                <input type="number" id="weight-log-fat" step="0.1" placeholder="體脂 %" style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.85rem; padding: 0.35rem 0.5rem; border-radius: 6px; width: 85px; height: 34px; box-sizing: border-box;">
+                <button type="submit" class="ai-action-btn primary" style="padding: 0.4rem 0.75rem; font-size: 0.85rem; border-radius: 6px; position: static; height: 34px; margin: 0; box-sizing: border-box;">💾 記錄</button>
+              </form>
             </div>
             
             <div class="charts-grid">
@@ -850,6 +854,6 @@
   </div>
 
   <!-- JavaScript logic -->
-  <script src="app.js?v=13"></script>
+  <script src="app.js?v=14"></script>
 </body>
 </html>

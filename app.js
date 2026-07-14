@@ -303,14 +303,11 @@ const fEnergyWorkout = document.getElementById('f-energy-workout');
 const fEnergyBmr = document.getElementById('f-energy-bmr');
 const fEnergyNetBadge = document.getElementById('f-energy-net-badge');
 
-const chartMaleWeightForm = document.getElementById('chart-male-weight-form');
-const chartFemaleWeightForm = document.getElementById('chart-female-weight-form');
-const chartMaleDate = document.getElementById('chart-male-date');
-const chartMaleW = document.getElementById('chart-male-w');
-const chartMaleF = document.getElementById('chart-male-f');
-const chartFemaleDate = document.getElementById('chart-female-date');
-const chartFemaleW = document.getElementById('chart-female-w');
-const chartFemaleF = document.getElementById('chart-female-f');
+const unifiedWeightLogForm = document.getElementById('unified-weight-log-form');
+const weightLogWho = document.getElementById('weight-log-who');
+const weightLogDate = document.getElementById('weight-log-date');
+const weightLogVal = document.getElementById('weight-log-val');
+const weightLogFat = document.getElementById('weight-log-fat');
 const workoutInfoTip = document.getElementById('workout-info-tip');
 
 // History logs tab buttons
@@ -387,8 +384,7 @@ function setDefaultDates() {
   const today = getLocalDateStr();
   workoutLogDate.value = today;
   aiLogDate.value = today;
-  if (chartMaleDate) chartMaleDate.value = today;
-  if (chartFemaleDate) chartFemaleDate.value = today;
+  if (weightLogDate) weightLogDate.value = today;
   if (energyBowlDate) energyBowlDate.value = today;
 }
 
@@ -403,7 +399,7 @@ function syncDatesWithDevice() {
   const today = getLocalDateStr();
   if (today === lastKnownDate) return;
 
-  [workoutLogDate, aiLogDate, chartMaleDate, chartFemaleDate, energyBowlDate].forEach(input => {
+  [workoutLogDate, aiLogDate, weightLogDate, energyBowlDate].forEach(input => {
     if (input && (!input.value || input.value === lastKnownDate)) {
       input.value = today;
     }
@@ -727,63 +723,54 @@ function setupLogFormListeners() {
     });
   }
 
-  // Chart Male Weight Form submission
-  if (chartMaleWeightForm) {
-    chartMaleWeightForm.addEventListener('submit', (e) => {
+  // Unified Weight & Fat Logger Form submission
+  if (unifiedWeightLogForm) {
+    unifiedWeightLogForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const date = chartMaleDate.value;
-      const maleW = parseFloat(chartMaleW.value);
-      const maleF = parseFloat(chartMaleF.value);
+      const who = weightLogWho.value;
+      const date = weightLogDate.value;
+      const weightVal = parseFloat(weightLogVal.value);
+      const fatVal = parseFloat(weightLogFat.value);
 
-      if (isNaN(maleW) || maleW <= 0) return;
+      if (isNaN(weightVal) || weightVal <= 0) return;
 
-      const existing = fitnessDB.maleWeightHistory.find(h => h.date === date);
-      if (existing) {
-        existing.weight = maleW;
-        existing.fat = isNaN(maleF) ? null : maleF;
+      const fatObj = isNaN(fatVal) ? null : fatVal;
+
+      if (who === 'male') {
+        const existing = (fitnessDB.maleWeightHistory || []).find(h => h.date === date);
+        if (existing) {
+          existing.weight = weightVal;
+          existing.fat = fatObj;
+        } else {
+          fitnessDB.maleWeightHistory = fitnessDB.maleWeightHistory || [];
+          fitnessDB.maleWeightHistory.push({ date, weight: weightVal, fat: fatObj });
+        }
+        fitnessDB.maleWeightHistory.sort((a,b) => a.date.localeCompare(b.date));
+        maleWeightInput.value = weightVal;
       } else {
-        fitnessDB.maleWeightHistory.push({ date, weight: maleW, fat: isNaN(maleF) ? null : maleF });
+        const existing = (fitnessDB.femaleWeightHistory || []).find(h => h.date === date);
+        if (existing) {
+          existing.weight = weightVal;
+          existing.fat = fatObj;
+        } else {
+          fitnessDB.femaleWeightHistory = fitnessDB.femaleWeightHistory || [];
+          fitnessDB.femaleWeightHistory.push({ date, weight: weightVal, fat: fatObj });
+        }
+        fitnessDB.femaleWeightHistory.sort((a,b) => a.date.localeCompare(b.date));
+        femaleWeightInput.value = weightVal;
       }
-      fitnessDB.maleWeightHistory.sort((a,b) => a.date.localeCompare(b.date));
 
-      // Sync sidebar current weight (target fields stay as user-set goals)
-      maleWeightInput.value = maleW;
+      // Reset fields
+      weightLogVal.value = '';
+      weightLogFat.value = '';
 
       calculateTargets();
       saveSharedData();
       renderHistoryTable();
       drawCharts();
-      alert('男生體重體脂登錄成功！圖表與每日基礎代謝率已同步更新！');
-    });
-  }
-
-  // Chart Female Weight Form submission
-  if (chartFemaleWeightForm) {
-    chartFemaleWeightForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const date = chartFemaleDate.value;
-      const femaleW = parseFloat(chartFemaleW.value);
-      const femaleF = parseFloat(chartFemaleF.value);
-
-      if (isNaN(femaleW) || femaleW <= 0) return;
-
-      const existing = fitnessDB.femaleWeightHistory.find(h => h.date === date);
-      if (existing) {
-        existing.weight = femaleW;
-        existing.fat = isNaN(femaleF) ? null : femaleF;
-      } else {
-        fitnessDB.femaleWeightHistory.push({ date, weight: femaleW, fat: isNaN(femaleF) ? null : femaleF });
-      }
-      fitnessDB.femaleWeightHistory.sort((a,b) => a.date.localeCompare(b.date));
-
-      // Sync sidebar current weight (target fields stay as user-set goals)
-      femaleWeightInput.value = femaleW;
-
-      calculateTargets();
-      saveSharedData();
-      renderHistoryTable();
-      drawCharts();
-      alert('女生體重體脂登錄成功！圖表與每日基礎代謝率已同步更新！');
+      
+      const whoLabel = who === 'male' ? '🙋‍♂️ 男生' : '🙋‍♀️ 女生';
+      alert(`${whoLabel}體重體脂登錄成功！圖表與每日基礎代謝率已同步更新！`);
     });
   }
 }
@@ -2583,5 +2570,13 @@ function handleWorkoutNameChange() {
     }
   }
 }
+
+function toggleRecipe(el) {
+  const card = el.closest('.recipe-card');
+  if (card) {
+    card.classList.toggle('expanded');
+  }
+}
+window.toggleRecipe = toggleRecipe;
 
 window.onload = init;
