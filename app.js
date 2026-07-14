@@ -2439,23 +2439,23 @@ function renderRecurringMealsList() {
     itemDiv.style.gap = '0.4rem';
 
     itemDiv.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <input type="checkbox" id="chk-rec-${rec.id}" ${rec.active ? 'checked' : ''} onchange="toggleRecurringMeal('${rec.id}', this.checked)" style="width: 15px; height: 15px; cursor: pointer;">
-          <strong style="font-size: 0.9rem; color: var(--text-main);">${escapeHTML(rec.name)}</strong>
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; min-width: 120px;">
+          <input type="checkbox" id="chk-rec-${rec.id}" ${rec.active ? 'checked' : ''} onchange="toggleRecurringMeal('${rec.id}', this.checked)" style="width: 15px; height: 15px; cursor: pointer; flex-shrink: 0;">
+          <strong style="font-size: 0.9rem; color: var(--text-main); word-break: break-word;">${escapeHTML(rec.name)}</strong>
         </div>
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <span style="font-size: 0.75rem; background: rgba(255, 255, 255, 0.1); padding: 0.1rem 0.4rem; border-radius: 4px; color: var(--text-muted);">${whoLabel} · ${escapeHTML(rec.meal)}</span>
-          <button class="remove-btn" style="position: static; padding: 0.2rem 0.4rem; font-size: 0.75rem; border-radius: 4px;" onclick="deleteRecurringMeal('${rec.id}')">🗑️</button>
+        <div style="display: flex; align-items: center; gap: 0.4rem; justify-content: flex-end;">
+          <span style="font-size: 0.72rem; background: rgba(255, 255, 255, 0.1); padding: 0.15rem 0.4rem; border-radius: 4px; color: var(--text-muted); white-space: nowrap;">${whoLabel} · ${escapeHTML(rec.meal)}</span>
+          <button class="remove-btn" style="position: static; padding: 0.2rem 0.4rem; font-size: 0.75rem; border-radius: 4px; margin-left: 0.2rem; flex-shrink: 0;" onclick="deleteRecurringMeal('${rec.id}')">🗑️</button>
         </div>
       </div>
-      <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 0.75rem; padding-left: 1.5rem;">
-        <span>🔥 熱量: ${rec.cal} kcal</span>
-        <span>🥩 蛋白: ${rec.p}g</span>
-        <span>🍚 碳水: ${rec.c}g</span>
-        <span>🥑 脂肪: ${rec.f}g</span>
-        <span>🥬 纖維: ${rec.fiber}g</span>
-        <span>🧂 鈉: ${rec.sodium}mg</span>
+      <div style="font-size: 0.72rem; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 0.4rem 0.75rem; padding-left: 1.5rem; margin-top: 0.25rem; border-top: 1px dashed rgba(255, 255, 255, 0.05); padding-top: 0.4rem;">
+        <span style="white-space: nowrap;">🔥 <b>${rec.cal}</b> kcal</span>
+        <span style="white-space: nowrap;">🥩 <b>${rec.p}</b>g 蛋白</span>
+        <span style="white-space: nowrap;">🍚 <b>${rec.c}</b>g 碳水</span>
+        <span style="white-space: nowrap;">🥑 <b>${rec.f}</b>g 脂肪</span>
+        <span style="white-space: nowrap;">🥬 <b>${rec.fiber}</b>g 纖維</span>
+        <span style="white-space: nowrap;">🧂 <b>${rec.sodium}</b>mg 鈉</span>
       </div>
     `;
     recurringMealsList.appendChild(itemDiv);
